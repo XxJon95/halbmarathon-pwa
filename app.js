@@ -17,6 +17,33 @@ const heuteISO = heute.toISOString().split("T")[0];
 // Google Sheets CSV URL
 const sheetURL = "https://docs.google.com/spreadsheets/d/1wmLe1BIdWzQ2UYf0b20IRTae1E_a9eru0vd_bhDeRkw/export?format=csv";
 
+function parseCSVLine(line) {
+    const result = [];
+    let current = "";
+    let insideQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+
+        if (char === '"') {
+            insideQuotes = !insideQuotes;
+        } 
+        else if (char === ',' && !insideQuotes) {
+            result.push(current);
+            current = "";
+        } 
+        else {
+            current += char;
+        }
+    }
+
+    result.push(current);
+
+    // Entfernt äußere Anführungszeichen
+    return result.map(field => field.replace(/^"|"$/g, ""));
+}
+
+
 // CSV laden
 fetch(sheetURL)
     .then(response => response.text())
@@ -40,7 +67,7 @@ fetch(sheetURL)
 
         for (let i = 1; i < zeilen.length; i++) {
 
-            const werte = zeilen[i].split(",");
+            const werte = parseCSVLine(zeilen[i]);
 
             // Datum aus Sheet (ggf. mit Uhrzeit abschneiden)
             const sheetDate = werte[index.date].split(" ")[0];
@@ -91,4 +118,3 @@ if ("serviceWorker" in navigator) {
             });
     });
 }
-
