@@ -1,5 +1,6 @@
 // Heutiges Datum anzeigen
 const heute = new Date();
+
 const options = {
     weekday: 'long',
     year: 'numeric',
@@ -10,42 +11,73 @@ const options = {
 document.getElementById("datum").innerText =
     heute.toLocaleDateString("de-DE", options);
 
-// Datum im CSV-Format erzeugen (YYYY-MM-DD)
+// ISO Datum erzeugen (YYYY-MM-DD)
 const heuteISO = heute.toISOString().split("T")[0];
 
+// Google Sheets CSV URL
+const sheetURL = "HIER_DEINE_CSV_URL_EINFÜGEN";
+
 // CSV laden
-fetch("https://docs.google.com/spreadsheets/d/1wmLe1BIdWzQ2UYf0b20IRTae1E_a9eru0vd_bhDeRkw/export?format=csv")
+fetch(sheetURL)
     .then(response => response.text())
     .then(data => {
 
-        const zeilen = data.split("\n");
+        // Zeilen sauber trennen (Windows + Unix kompatibel)
+        const zeilen = data.trim().split(/\r?\n/);
+
+        // Header auslesen
         const header = zeilen[0].split(",");
+
+        // Spaltenindex dynamisch bestimmen
+        const index = {
+            date: header.indexOf("Date"),
+            training: header.indexOf("Session Type"),
+            distanz: header.indexOf("Duration/Distance"),
+	    heartrate: header.indexOf("Heart Rate Target"),
+            pace: header.indexOf("Pace Target"),
+            notiz: header.indexOf("Notes")
+        };
 
         for (let i = 1; i < zeilen.length; i++) {
 
             const werte = zeilen[i].split(",");
 
-            if (werte[0] === heuteISO) {
+            // Datum aus Sheet (ggf. mit Uhrzeit abschneiden)
+            const sheetDate = werte[index.date].split(" ")[0];
 
-                document.getElementById("training").innerText = werte[1];
-                document.getElementById("distanz").innerText = werte[2];
-                document.getElementById("pace").innerText = werte[3];
-                document.getElementById("notiz").innerText = werte[4];
+            if (sheetDate === heuteISO) {
+
+                document.getElementById("training").innerText =
+                    werte[index.training] || "-";
+
+                document.getElementById("distanz").innerText =
+                    werte[index.distanz] || "-";
+
+                document.getElementById("pace").innerText =
+                    werte[index.pace] || "-";
+
+		document.getElementById("heartrate").innerText =
+    		    werte[index.heartrate] || "-";
+
+                document.getElementById("notiz").innerText =
+                    werte[index.notiz] || "-";
 
                 return;
             }
         }
 
-        // Falls kein Training gefunden wurde
+        // Kein Eintrag gefunden
         document.getElementById("training").innerText = "Kein Eintrag";
         document.getElementById("distanz").innerText = "-";
         document.getElementById("pace").innerText = "-";
+	document.getElementById("heartrate").innerText = "-";
         document.getElementById("notiz").innerText = "Heute kein Training geplant.";
 
     })
     .catch(error => {
         console.error("Fehler beim Laden der CSV:", error);
     });
+
 
 // Service Worker registrieren
 if ("serviceWorker" in navigator) {
@@ -59,4 +91,3 @@ if ("serviceWorker" in navigator) {
             });
     });
 }
-
