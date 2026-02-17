@@ -15,7 +15,7 @@ document.getElementById("datum").innerText =
 const heuteISO = heute.toISOString().split("T")[0];
 
 // Google Sheets CSV URL
-const sheetURL = "HIER_DEINE_CSV_URL_EINFÜGEN";
+const sheetURL = "https://docs.google.com/spreadsheets/d/1wmLe1BIdWzQ2UYf0b20IRTae1E_a9eru0vd_bhDeRkw/export?format=csv";
 
 // CSV laden
 fetch(sheetURL)
@@ -91,3 +91,4 @@ if ("serviceWorker" in navigator) {
             });
     });
 }
+
