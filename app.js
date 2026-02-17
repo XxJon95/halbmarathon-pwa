@@ -14,7 +14,7 @@ document.getElementById("datum").innerText =
 const heuteISO = heute.toISOString().split("T")[0];
 
 // CSV laden
-fetch("trainingsplan.csv")
+fetch("https://docs.google.com/spreadsheets/d/1wmLe1BIdWzQ2UYf0b20IRTae1E_a9eru0vd_bhDeRkw/export?format=csv")
     .then(response => response.text())
     .then(data => {
 
@@ -59,3 +59,4 @@ if ("serviceWorker" in navigator) {
             });
     });
 }
+
