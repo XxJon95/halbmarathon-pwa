@@ -12,67 +12,54 @@
 
 <body>
 
-    <div class="container">
-        <h1>Halbmarathon Sommer 2026</h1>
+    <div class="card">
+        <h1>Halbmarathon <span>Sommer 2026</span></h1>
 
-        <div class="card">
-            <h1>Halbmarathon <span>Sommer 2026</span></h1>
+        <!-- Countdown Card -->
+        <div class="card countdown-card">
+            <p class="countdown-main" id="countdown-text"></p>
 
-            <!-- Countdown Card -->
-            <div class="card countdown-card">
-                <p class="countdown-main" id="countdown-text"></p>
-
-                <div class="progress-container">
-                    <div class="progress-bar" id="progress-bar"></div>
-                </div>
-
-                <div class="countdown-dates">
-                    <span>Start: 01.01.2026</span>
-                    <span>Ziel: 05.07.2026</span>
-                </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
             </div>
 
-            <!-- Heute Card -->
-            <div class="card">
-                <h2>HEUTE – <span id="datum"></span></h2>
-
-                <div class="training-grid">
-                    <div class="row">
-                        <span class="label">Training</span>
-                        <span id="training"></span>
-                    </div>
-
-                    <div class="row">
-                        <span class="label">Dauer / Distanz</span>
-                        <span id="distanz"></span>
-                    </div>
-
-                    <div class="row">
-                        <span class="label">Pace Ziel</span>
-                        <span id="pace"></span>
-                    </div>
-
-                    <div class="row">
-                        <span class="label">Herzfrequenz Ziel</span>
-                        <span id="heartrate"></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Notiz Card -->
-            <div class="card">
-                <h2>Notiz</h2>
-                <p id="notiz"></p>
+            <div class="countdown-dates">
+                <span>Start: 01.01.2026</span>
+                <span>Ziel: 05.07.2026</span>
             </div>
         </div>
-    </div>
 
-    <div class="card" id="countdown-card">
-        <h2>Countdown</h2>
-        <p id="countdown-text"></p>
+        <!-- Heute Card -->
+        <div class="card">
+            <h2>HEUTE – <span id="datum"></span></h2>
 
-        <div class="progress-container">
-            <div class="progress-bar" id="progress-bar"></div>
+            <div class="training-grid">
+                <div class="row">
+                    <span class="label">Training</span>
+                    <span id="training"></span>
+                </div>
+
+                <div class="row">
+                    <span class="label">Dauer / Distanz</span>
+                    <span id="distanz"></span>
+                </div>
+
+                <div class="row">
+                    <span class="label">Pace Ziel</span>
+                    <span id="pace"></span>
+                </div>
+
+                <div class="row">
+                    <span class="label">Herzfrequenz Ziel</span>
+                    <span id="heartrate"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notiz Card -->
+        <div class="card">
+            <h2>Notiz</h2>
+            <p id="notiz"></p>
         </div>
     </div>
 
