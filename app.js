@@ -105,6 +105,51 @@ fetch(sheetURL)
         console.error("Fehler beim Laden der CSV:", error);
     });
 
+// ===============================
+// Countdown bis zum Wettkampf
+// ===============================
+
+const trainingsStart = new Date("2026-01-01");
+const wettkampf = new Date("2026-07-05");
+const heuteMitternacht = new Date();
+heuteMitternacht.setHours(0, 0, 0, 0);
+
+const gesamtTage = Math.ceil((wettkampf - trainingsStart) / (1000 * 60 * 60 * 24));
+const restTage = Math.ceil((wettkampf - heuteMitternacht) / (1000 * 60 * 60 * 24));
+
+const countdownText = document.getElementById("countdown-text");
+const progressBar = document.getElementById("progress-bar");
+
+// Wenn Wettkampf vorbei ist
+if (restTage < 0) {
+    countdownText.innerText = "Der Halbmarathon ist geschafft!";
+    progressBar.style.width = "100%";
+} 
+// Wenn heute Wettkampftag ist
+else if (restTage === 0) {
+    countdownText.innerText = "Heute ist der große Tag!";
+    progressBar.style.width = "100%";
+} 
+else {
+
+    if (restTage > 30) {
+        const restWochen = Math.ceil(restTage / 7);
+        countdownText.innerText = `Noch ${restWochen} Wochen bis zum Halbmarathon.`;
+    } else {
+        countdownText.innerText = `Noch ${restTage} Tage bis zum Halbmarathon.`;
+    }
+
+    // Fortschritt berechnen
+    const vergangeneTage = gesamtTage - restTage;
+    let fortschritt = (vergangeneTage / gesamtTage) * 100;
+
+    // Sicherheitsgrenzen
+    if (fortschritt < 0) fortschritt = 0;
+    if (fortschritt > 100) fortschritt = 100;
+
+    progressBar.style.width = fortschritt + "%";
+}
+
 
 // Service Worker registrieren
 if ("serviceWorker" in navigator) {
