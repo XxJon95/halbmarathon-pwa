@@ -4,35 +4,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Halbmarathon Dashboard</title>
+    <title>Halbmarathon Sommer 2026</title>
 
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
 </head>
 
 <body>
+    <div class="container">
 
-    <div class="card">
         <h1>Halbmarathon <span>Sommer 2026</span></h1>
 
-        <!-- Countdown Card -->
+        <!-- COUNTDOWN -->
         <div class="card countdown-card">
-            <p class="countdown-main" id="countdown-text"></p>
+            <div class="countdown-main" id="countdown-text"></div>
 
             <div class="progress-container">
                 <div class="progress-bar" id="progress-bar"></div>
             </div>
 
             <div class="countdown-dates">
-                <span>Start: 01.01.2026</span>
-                <span>Ziel: 05.07.2026</span>
+                <span>Trainingsstart 01.01.2026</span>
+                <span>Wettkampftag 05.07.2026</span>
             </div>
         </div>
 
-        <!-- Heute Card -->
-        <div class="card">
-            <h2>HEUTE – <span id="datum"></span></h2>
+        <!-- HEUTIGES TRAINING HEADER -->
+        <div class="section-header">
+            <h2>HEUTIGES TRAINING</h2>
+            <div class="section-date" id="datum"></div>
+        </div>
 
+        <!-- TRAINING CARD -->
+        <div class="card">
             <div class="training-grid">
                 <div class="row">
                     <span class="label">Training</span>
@@ -56,11 +60,12 @@
             </div>
         </div>
 
-        <!-- Notiz Card -->
+        <!-- NOTIZ -->
         <div class="card">
             <h2>Notiz</h2>
             <p id="notiz"></p>
         </div>
+
     </div>
 
     <script src="app.js"></script>
