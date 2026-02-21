@@ -170,93 +170,79 @@ if (restTage > 0) {
 const raceDate = new Date("2026-07-05");
 
 const phases = [
-  {
-    name: "Phase 1",
-    subtitle: "Initial",
-    start: "2026-01-01",
-    durationWeeks: 8
-  },
-  {
-    name: "Phase 2",
-    subtitle: "Progression",
-    start: "2026-02-26", // 8 Wochen nach Phase 1
-    durationWeeks: 8
-  },
-  {
-    name: "Phase 3",
-    subtitle: "Taper",
-    start: "2026-04-23", // 8 Wochen nach Phase 2
-    untilRace: true
-  },
-  {
-    name: "Phase 4",
-    subtitle: "Recovery",
-    start: "2026-07-05",
-    durationWeeks: 2
-  }
+  { name: "Phase 1", subtitle: "Initial", start: "2026-01-01", durationWeeks: 8 },
+  { name: "Phase 2", subtitle: "Progression", start: "2026-02-26", durationWeeks: 8 },
+  { name: "Phase 3", subtitle: "Taper", start: "2026-04-23", untilRace: true },
+  { name: "Phase 4", subtitle: "Recovery", start: "2026-07-05", durationWeeks: 2 }
 ];
 
 const phasesContainer = document.getElementById("phases-container");
 
-phases.forEach((phase, index) => {
+if (phasesContainer) {
 
-  const startDate = new Date(phase.start);
-  let endDate;
+  phasesContainer.innerHTML = "";
 
-  if (phase.untilRace) {
-    endDate = new Date(raceDate);
-  } else {
-    endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + (phase.durationWeeks * 7));
-  }
+  phases.forEach((phase, index) => {
 
-  const card = document.createElement("div");
-  card.classList.add("phase-card", `phase-${index + 1}`);
-
-  let statusText = "";
-  let statusClass = "";
-
-  if (heute < startDate) {
-
-    statusText = "ab " + startDate.toLocaleDateString("de-DE", {
-      day: "numeric",
-      month: "numeric"
-    });
-
-    statusClass = "status-future";
-
-  } else if (heute >= startDate && heute <= endDate) {
+    const startDate = new Date(phase.start);
+    let endDate;
 
     if (phase.untilRace) {
+      endDate = new Date(raceDate);
+    } else {
+      endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + (phase.durationWeeks * 7));
+    }
 
-      const diffDays = Math.ceil((raceDate - heute) / (1000 * 60 * 60 * 24));
-      statusText = diffDays + " Tage";
-      statusClass = "status-active";
+    const card = document.createElement("div");
+    card.classList.add("phase-card", `phase-${index + 1}`);
+
+    let statusText = "";
+    let statusClass = "";
+
+    if (heute < startDate) {
+
+      statusText = "ab " + startDate.toLocaleDateString("de-DE", {
+        day: "numeric",
+        month: "numeric"
+      });
+
+      statusClass = "status-future";
+
+    } else if (heute >= startDate && heute <= endDate) {
+
+      if (phase.untilRace) {
+
+        const diffDays = Math.ceil((raceDate - heute) / (1000 * 60 * 60 * 24));
+        statusText = diffDays + " Tage";
+        statusClass = "status-active";
+
+      } else {
+
+        const diffDays = Math.floor((heute - startDate) / (1000 * 60 * 60 * 24));
+        const currentWeek = Math.floor(diffDays / 7) + 1;
+
+        statusText = "Woche " + currentWeek + "/" + phase.durationWeeks;
+        statusClass = "status-active";
+      }
 
     } else {
 
-      const diffDays = Math.floor((heute - startDate) / (1000 * 60 * 60 * 24));
-      const currentWeek = Math.floor(diffDays / 7) + 1;
-
-      statusText = "Woche " + currentWeek + "/" + phase.durationWeeks;
-      statusClass = "status-active";
+      statusText = "✔";
+      statusClass = "status-complete";
     }
 
-  } else {
+    card.innerHTML = `
+      <div class="phase-title">${phase.name}</div>
+      <div class="phase-sub">${phase.subtitle}</div>
+      <div class="phase-status ${statusClass}">${statusText}</div>
+    `;
 
-    statusText = "✔";
-    statusClass = "status-complete";
-  }
+    phasesContainer.appendChild(card);
 
-  card.innerHTML = `
-    <div class="phase-title">${phase.name}</div>
-    <div class="phase-sub">${phase.subtitle}</div>
-    <div class="phase-status ${statusClass}">${statusText}</div>
-  `;
+  });
 
-  phasesContainer.appendChild(card);
-
-});
+}
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
@@ -264,6 +250,7 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
 
