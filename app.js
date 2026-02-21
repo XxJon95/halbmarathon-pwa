@@ -35,7 +35,10 @@ document.getElementById("datum").innerText =
         day: "numeric"
     });
 
-const heuteISO = heute.toISOString().split("T")[0];
+const heuteISO =
+  heute.getFullYear() + "-" +
+  String(heute.getMonth() + 1).padStart(2, "0") + "-" +
+  String(heute.getDate()).padStart(2, "0");
 
 /* GOOGLE SHEETS LADEN */
 fetch(sheetURL)
@@ -152,3 +155,4 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
