@@ -211,9 +211,10 @@ phases.forEach((phase, index) => {
   }
 
   const card = document.createElement("div");
-  card.classList.add("phase-card", `phase-${index+1}`);
+  card.classList.add("phase-card", `phase-${index + 1}`);
 
   let statusText = "";
+  let statusClass = "";
 
   if (heute < startDate) {
 
@@ -222,61 +223,35 @@ phases.forEach((phase, index) => {
       month: "numeric"
     });
 
+    statusClass = "status-future";
+
   } else if (heute >= startDate && heute <= endDate) {
 
     if (phase.untilRace) {
 
-      const diffDays = Math.ceil((raceDate - heute) / (1000*60*60*24));
+      const diffDays = Math.ceil((raceDate - heute) / (1000 * 60 * 60 * 24));
       statusText = diffDays + " Tage";
+      statusClass = "status-active";
 
     } else {
 
-      const diffDays = Math.floor((heute - startDate) / (1000*60*60*24));
+      const diffDays = Math.floor((heute - startDate) / (1000 * 60 * 60 * 24));
       const currentWeek = Math.floor(diffDays / 7) + 1;
-      statusText = "Woche " + currentWeek + "/" + phase.durationWeeks;
 
+      statusText = "Woche " + currentWeek + "/" + phase.durationWeeks;
+      statusClass = "status-active";
     }
 
   } else {
 
-    let statusText = "";
-    let statusClass = "";
-
-    if (heute < startDate) {
-
-      statusText = "ab " + startDate.toLocaleDateString("de-DE", {
-        day: "numeric",
-        month: "numeric"
-      });
-
-      statusClass = "status-future";
-
-    } else if (heute >= startDate && heute <= endDate) {
-
-      if (phase.untilRace) {
-
-        const diffDays = Math.ceil((raceDate - heute) / (1000*60*60*24));
-        statusText = diffDays + " Tage";
-        statusClass = "status-active";
-
-      } else {
-
-        const diffDays = Math.floor((heute - startDate) / (1000*60*60*24));
-        const currentWeek = Math.floor(diffDays / 7) + 1;
-        statusText = "Woche " + currentWeek + "/" + phase.durationWeeks;
-        statusClass = "status-active";
-      }
-
-    } else {
-
-      statusText = "✔";
-      statusClass = "status-complete";
-    }
+    statusText = "✔";
+    statusClass = "status-complete";
+  }
 
   card.innerHTML = `
-      <div class="phase-title">${phase.name}</div>
-      <div class="phase-sub">${phase.subtitle}</div>
-      <div class="phase-status ${statusClass}">${statusText}</div>
+    <div class="phase-title">${phase.name}</div>
+    <div class="phase-sub">${phase.subtitle}</div>
+    <div class="phase-status ${statusClass}">${statusText}</div>
   `;
 
   phasesContainer.appendChild(card);
@@ -289,6 +264,7 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
 
