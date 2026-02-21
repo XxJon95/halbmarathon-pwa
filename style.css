@@ -22,7 +22,7 @@ h1 {
   font-weight: 800;
   line-height: 1.1;
   margin-bottom: 24px;   /* vorher ~40px */
-  padding-left: 6px;     /* leichte Einrückung */
+  padding-left: 12px;     /* leichte Einrückung */
 }
 
 h1 span {
@@ -115,7 +115,7 @@ h1 span {
   flex-direction: column;
   gap: 4px;
   margin-bottom: 12px;
-  padding-left: 6px;   /* gleiche Einrückung wie h1 */
+  padding-left: 12px;   /* gleiche Einrückung wie h1 */
 }
 
 .section-header h2 {
@@ -217,5 +217,6 @@ h1 span {
   }
 
 }
+
 
 
