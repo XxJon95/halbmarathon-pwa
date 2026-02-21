@@ -55,15 +55,18 @@ h1 span {
 .countdown-line-main {
   font-size: 20px;
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 1px;   /* vorher 4px */
   display: flex;
   align-items: baseline;
   gap: 8px;
+  line-height: 1.1;     /* enger */
 }
 
 .countdown-line-sub {
   font-size: 15px;
   opacity: 0.75;
+  margin-top: 0;        /* sicherstellen */
+  line-height: 1.1;     /* enger */
 }
 
 .big-number {
@@ -217,6 +220,7 @@ h1 span {
   }
 
 }
+
 
 
 
