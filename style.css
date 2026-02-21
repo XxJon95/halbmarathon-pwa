@@ -21,7 +21,8 @@ h1 {
   font-size: 34px;
   font-weight: 800;
   line-height: 1.1;
-  margin-bottom: 40px;
+  margin-bottom: 24px;   /* vorher ~40px */
+  padding-left: 6px;     /* leichte Einrückung */
 }
 
 h1 span {
@@ -114,6 +115,7 @@ h1 span {
   flex-direction: column;
   gap: 4px;
   margin-bottom: 12px;
+  padding-left: 6px;   /* gleiche Einrückung wie h1 */
 }
 
 .section-header h2 {
@@ -168,13 +170,13 @@ h1 span {
   color: #cbd5e1;
 }
 
-/* Notiz kompakter */
+/* NOTE CARD SPACING */
 
-.card:last-of-type {
-  padding-top: 18px;
+.note-card {
+  padding-top: 16px;
 }
 
-.card:last-of-type h2 {
+.note-card h2 {
   margin-bottom: 8px;
 }
 
@@ -215,4 +217,5 @@ h1 span {
   }
 
 }
+
 
