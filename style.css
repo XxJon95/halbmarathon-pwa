@@ -159,3 +159,57 @@ h1 span {
     border: 1px dashed rgba(148, 163, 184, 0.3);
     color: #cbd5e1;
 }
+
+/* =========================
+   MOBILE OPTIMIERUNG
+========================= */
+
+@media (max-width: 768px) {
+
+  body {
+    padding: 25px 18px;
+  }
+
+  h1 {
+    font-size: 36px;
+    margin-bottom: 40px;
+  }
+
+  .big-number {
+    font-size: 64px;
+  }
+
+  .countdown-line2 {
+    font-size: 28px;
+  }
+
+  .countdown-line1,
+  .countdown-line3 {
+    font-size: 18px;
+  }
+
+  .card {
+    padding: 25px;
+  }
+
+  .section-header h2 {
+    font-size: 20px;
+  }
+
+  .section-date {
+    font-size: 16px;
+  }
+
+  .row {
+    font-size: 15px;
+  }
+
+  #notiz {
+    font-size: 15px;
+  }
+
+  .progress-container {
+    height: 16px;
+  }
+
+}
