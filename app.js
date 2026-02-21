@@ -118,22 +118,22 @@ if (restTage > 0) {
         const restWochen = Math.ceil(restTage / 7);
 
         countdownText.innerHTML = `
-      <div class="countdown-line1">Noch</div>
-      <div class="countdown-line2">
-        <span class="big-number">${restWochen}</span>
-        Wochen
-      </div>
-      <div class="countdown-line3">bis zum Halbmarathon</div>
-    `;
-    } else {
-        countdownText.innerHTML = `
-      <div class="countdown-line1">Noch</div>
-      <div class="countdown-line2">
-        <span class="big-number">${restTage}</span>
-        Tage
-      </div>
-      <div class="countdown-line3">bis zum Halbmarathon</div>
-    `;
+          <div class="countdown-line-main">
+            Noch <span class="big-number">${restWochen}</span> Wochen
+          </div>
+          <div class="countdown-line-sub">
+            bis zum Halbmarathon
+          </div>
+        `;
+    else {
+      countdownText.innerHTML = `
+        <div class="countdown-line-main">
+          Noch <span class="big-number">${restTage}</span> Tage
+        </div>
+        <div class="countdown-line-sub">
+          bis zum Halbmarathon
+        </div>
+      `;
     }
 
     const vergangeneTage = gesamtTage - restTage;
@@ -155,4 +155,5 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
