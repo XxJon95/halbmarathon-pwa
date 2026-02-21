@@ -106,47 +106,61 @@ fetch(sheetURL)
 const trainingsStart = new Date("2026-01-01");
 const wettkampf = new Date("2026-07-05");
 
-const gesamtTage = Math.ceil((wettkampf - trainingsStart) / (1000 * 60 * 60 * 24));
-const restTage = Math.ceil((wettkampf - heute) / (1000 * 60 * 60 * 24));
+const gesamtTage = Math.ceil((wettkampf - trainingsStart) / (1000*60*60*24));
+const restTage = Math.ceil((wettkampf - heute) / (1000*60*60*24));
 
 const countdownText = document.getElementById("countdown-text");
 const progressBar = document.getElementById("progress-bar");
 
 if (restTage > 0) {
 
-    if (restTage > 30) {
-        const restWochen = Math.ceil(restTage / 7);
+  if (restTage > 30) {
 
-        countdownText.innerHTML = `
-          <div class="countdown-line-main">
-            Noch <span class="big-number">${restWochen}</span> Wochen
-          </div>
-          <div class="countdown-line-sub">
-            bis zum Halbmarathon
-          </div>
-        `;
-    else {
-      countdownText.innerHTML = `
-        <div class="countdown-line-main">
-          Noch <span class="big-number">${restTage}</span> Tage
-        </div>
-        <div class="countdown-line-sub">
-          bis zum Halbmarathon
-        </div>
-      `;
-    }
+    const restWochen = Math.ceil(restTage / 7);
 
-    const vergangeneTage = gesamtTage - restTage;
-    let fortschritt = (vergangeneTage / gesamtTage) * 100;
+    countdownText.innerHTML = `
+      <div class="countdown-line-main">
+        Noch <span class="big-number">${restWochen}</span> Wochen
+      </div>
+      <div class="countdown-line-sub">
+        bis zum Halbmarathon
+      </div>
+    `;
 
-    if (fortschritt < 0) fortschritt = 0;
-    if (fortschritt > 100) fortschritt = 100;
+  } else {
 
-    progressBar.style.width = fortschritt + "%";
+    countdownText.innerHTML = `
+      <div class="countdown-line-main">
+        Noch <span class="big-number">${restTage}</span> Tage
+      </div>
+      <div class="countdown-line-sub">
+        bis zum Halbmarathon
+      </div>
+    `;
+
+  }
+
+  const vergangeneTage = gesamtTage - restTage;
+  let fortschritt = (vergangeneTage / gesamtTage) * 100;
+
+  if (fortschritt < 0) fortschritt = 0;
+  if (fortschritt > 100) fortschritt = 100;
+
+  progressBar.style.width = fortschritt + "%";
 
 } else {
-    countdownText.innerHTML = `<div class="big-number">Heute ist der große Tag!</div>`;
-    progressBar.style.width = "100%";
+
+  countdownText.innerHTML = `
+    <div class="countdown-line-main">
+      <span class="big-number">Heute</span>
+    </div>
+    <div class="countdown-line-sub">
+      ist der große Tag!
+    </div>
+  `;
+
+  progressBar.style.width = "100%";
+
 }
 
 /* SERVICE WORKER */
@@ -155,5 +169,6 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
