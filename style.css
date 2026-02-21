@@ -173,15 +173,11 @@ h1 span {
 /* NOTE CARD SPACING */
 
 .note-card {
-  padding: 16px 22px 22px 22px;
+  padding: 16px 22px;
 }
 
 .note-card h2 {
-  margin: 0 0 8px 12px;  /* gleiche Einrückung wie h1 */
-}
-
-#notiz {
-  margin-left: 12px;
+  margin: 0 0 8px 12px;
 }
 
 /* =========================
@@ -221,6 +217,7 @@ h1 span {
   }
 
 }
+
 
 
 
