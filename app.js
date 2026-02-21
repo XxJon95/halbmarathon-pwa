@@ -163,12 +163,101 @@ if (restTage > 0) {
 
 }
 
+/* =========================
+   TRAININGSPHASEN
+========================= */
+
+const raceDate = new Date("2026-07-05");
+
+const phases = [
+  {
+    name: "Phase 1",
+    subtitle: "Initial",
+    start: "2026-01-01",
+    durationWeeks: 8
+  },
+  {
+    name: "Phase 2",
+    subtitle: "Progression",
+    start: "2026-02-26", // 8 Wochen nach Phase 1
+    durationWeeks: 8
+  },
+  {
+    name: "Phase 3",
+    subtitle: "Taper",
+    start: "2026-04-23", // 8 Wochen nach Phase 2
+    untilRace: true
+  },
+  {
+    name: "Phase 4",
+    subtitle: "Recovery",
+    start: "2026-07-05",
+    durationWeeks: 2
+  }
+];
+
+const phasesContainer = document.getElementById("phases-container");
+
+phases.forEach(phase => {
+
+  const startDate = new Date(phase.start);
+  let endDate;
+
+  if (phase.untilRace) {
+    endDate = new Date(raceDate);
+  } else {
+    endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + (phase.durationWeeks * 7));
+  }
+
+  const card = document.createElement("div");
+  card.classList.add("phase-card");
+
+  let statusText = "";
+
+  if (heute < startDate) {
+
+    statusText = "ab " + startDate.toLocaleDateString("de-DE");
+
+  } else if (heute >= startDate && heute <= endDate) {
+
+    if (phase.untilRace) {
+
+      const diffDays = Math.ceil((raceDate - heute) / (1000*60*60*24));
+      statusText = diffDays + " Tage";
+
+    } else {
+
+      const diffDays = Math.floor((heute - startDate) / (1000*60*60*24));
+      const currentWeek = Math.floor(diffDays / 7) + 1;
+      statusText = "Woche " + currentWeek + "/" + phase.durationWeeks;
+
+    }
+
+  } else {
+
+    statusText = "✔";
+    card.classList.add("phase-complete");
+
+  }
+
+  card.innerHTML = `
+    <div class="phase-title">${phase.name}</div>
+    <div class="phase-sub">${phase.subtitle}</div>
+    <div class="phase-status">${statusText}</div>
+  `;
+
+  phasesContainer.appendChild(card);
+
+});
+
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
 
