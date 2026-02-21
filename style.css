@@ -21,7 +21,7 @@ h1 {
   font-size: 34px;
   font-weight: 800;
   line-height: 1.1;
-  margin-bottom: 24px;   /* vorher ~40px */
+  margin-bottom: 14px;   /* vorher ~24px */
   padding-left: 12px;     /* leichte Einrückung */
 }
 
@@ -173,11 +173,11 @@ h1 span {
 /* NOTE CARD SPACING */
 
 .note-card {
-  padding: 16px 22px;
+  padding: 14px 22px;
 }
 
 .note-card h2 {
-  margin: 0 0 8px 12px;
+  margin: 0 0 4px 12px;   /* vorher 8px */
 }
 
 /* =========================
@@ -217,6 +217,7 @@ h1 span {
   }
 
 }
+
 
 
 
