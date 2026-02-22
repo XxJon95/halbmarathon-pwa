@@ -76,8 +76,30 @@
     </div>
 
     <script src="app.js"></script>
+
+    <div id="dev-panel" class="dev-panel hidden">
+      <h3>Dev Panel</h3>
+
+      <label>Simuliertes Datum</label>
+      <input type="date" id="dev-date">
+
+      <label>Trainingsstart</label>
+      <input type="date" id="dev-start">
+
+      <label>Wettkampftag</label>
+      <input type="date" id="dev-race">
+
+      <label>Phase 1 Wochen</label>
+      <input type="number" id="dev-p1" min="1">
+
+      <label>Phase 2 Wochen</label>
+      <input type="number" id="dev-p2" min="1">
+
+      <label>Recovery Wochen</label>
+      <input type="number" id="dev-p4" min="1">
+
+      <button id="dev-apply">Apply</button>
+    </div>
 </body>
 
 </html>
-
-
