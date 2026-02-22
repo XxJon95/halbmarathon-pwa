@@ -184,8 +184,6 @@ if (restTage > 0) {
    TRAININGSPHASEN
 ========================= */
 
-const raceDate = new Date("2026-07-05");
-
 const phases = [
   { name: "Phase 1", subtitle: "Initial", start: DEV_SETTINGS.start, durationWeeks: DEV_SETTINGS.p1 },
   { name: "Phase 2", subtitle: "Progression", start: addWeeks(DEV_SETTINGS.start, DEV_SETTINGS.p1), durationWeeks: DEV_SETTINGS.p2 },
@@ -287,5 +285,6 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
