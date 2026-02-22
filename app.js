@@ -123,8 +123,8 @@ fetch(sheetURL)
 const trainingsStart = new Date(DEV_SETTINGS.start);
 const raceDate = new Date(DEV_SETTINGS.race);
 
-const gesamtTage = Math.ceil((wettkampf - trainingsStart) / (1000*60*60*24));
-const restTage = Math.ceil((wettkampf - heute) / (1000*60*60*24));
+const gesamtTage = Math.ceil((raceDate - trainingsStart) / (1000*60*60*24));
+const restTage = Math.ceil((raceDate - heute) / (1000*60*60*24));
 
 const countdownText = document.getElementById("countdown-text");
 const progressBar = document.getElementById("progress-bar");
@@ -285,6 +285,7 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
 
