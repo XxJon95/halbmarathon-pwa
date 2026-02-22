@@ -182,65 +182,64 @@ if (phasesContainer) {
 
   phasesContainer.innerHTML = "";
 
-  phases.forEach((phase, index) => {
+  phases.forEach((phase) => {
 
-  const startDate = new Date(phase.start);
-  let endDate;
-
-  if (phase.untilRace) {
-    endDate = new Date(raceDate);
-  } else {
-    endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + (phase.durationWeeks * 7));
-  }
-
-  const card = document.createElement("div");
-  card.classList.add("phase-card");
-
-  let statusText = "";
-  let statusClass = "";
-
-  if (heute < startDate) {
-
-    statusText = "ab " + startDate.toLocaleDateString("de-DE", {
-      day: "numeric",
-      month: "numeric"
-    });
-
-    statusClass = "phase-future";
-
-  } else if (heute >= startDate && heute <= endDate) {
+    const startDate = new Date(phase.start);
+    let endDate;
 
     if (phase.untilRace) {
+      endDate = new Date(raceDate);
+    } else {
+      endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + (phase.durationWeeks * 7));
+    }
 
-      const diffDays = Math.ceil((raceDate - heute) / (1000 * 60 * 60 * 24));
-      statusText = diffDays + " Tage";
+    const card = document.createElement("div");
+    card.classList.add("phase-card");
+
+    let statusText = "";
+    let statusClass = "";
+
+    if (heute < startDate) {
+
+      statusText = "ab " + startDate.toLocaleDateString("de-DE", {
+        day: "numeric",
+        month: "numeric"
+      });
+
+      statusClass = "phase-future";
+
+    } else if (heute >= startDate && heute <= endDate) {
+
+      if (phase.untilRace) {
+
+        const diffDays = Math.ceil((raceDate - heute) / (1000 * 60 * 60 * 24));
+        statusText = diffDays + " Tage";
+
+      } else {
+
+        const diffDays = Math.floor((heute - startDate) / (1000 * 60 * 60 * 24));
+        const currentWeek = Math.floor(diffDays / 7) + 1;
+        statusText = "Woche " + currentWeek + "/" + phase.durationWeeks;
+      }
+
+      statusClass = "phase-active";
 
     } else {
 
-      const diffDays = Math.floor((heute - startDate) / (1000 * 60 * 60 * 24));
-      const currentWeek = Math.floor(diffDays / 7) + 1;
-
-      statusText = "Woche " + currentWeek + "/" + phase.durationWeeks;
+      statusText = "✔";
+      statusClass = "phase-complete";
     }
 
-    statusClass = "phase-active";
+    card.classList.add(statusClass);
 
-  } else {
+    card.innerHTML = `
+      <div class="phase-title">${phase.name}</div>
+      <div class="phase-sub">${phase.subtitle}</div>
+      <div class="phase-status">${statusText}</div>
+    `;
 
-    statusText = "✔";
-    statusClass = "phase-complete";
-  }
-
-  card.classList.add(statusClass);
-
-  card.innerHTML = `
-    <div class="phase-title">${phase.name}</div>
-    <div class="phase-sub">${phase.subtitle}</div>
-    <div class="phase-status">${statusText}</div>
-  `;
-
-  phasesContainer.appendChild(card);
+    phasesContainer.appendChild(card);
 
   });
 
@@ -252,3 +251,4 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
