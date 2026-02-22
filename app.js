@@ -173,7 +173,7 @@ const phases = [
   { name: "Phase 1", subtitle: "Initial", start: "2026-01-01", durationWeeks: 8 },
   { name: "Phase 2", subtitle: "Progression", start: "2026-02-26", durationWeeks: 8 },
   { name: "Phase 3", subtitle: "Taper", start: "2026-04-23", untilRace: true },
-  { name: "Phase 4", subtitle: "Recovery", start: "2026-07-05", durationWeeks: 2 }
+  { name: "Phase 4", subtitle: "Recovery", start: "2026-07-06", durationWeeks: 2 }
 ];
 
 const phasesContainer = document.getElementById("phases-container");
@@ -184,53 +184,66 @@ if (phasesContainer) {
 
   phases.forEach((phase, index) => {
 
-    const startDate = new Date(phase.start);
-    let endDate;
+  const startDate = new Date(phase.start);
+  let endDate;
+
+  if (phase.untilRace) {
+    endDate = new Date(raceDate);
+  } else {
+    endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + (phase.durationWeeks * 7));
+  }
+
+  const card = document.createElement("div");
+  card.classList.add("phase-card");
+
+  let statusText = "";
+  let statusClass = "";
+
+  if (heute < startDate) {
+
+    statusText = "ab " + startDate.toLocaleDateString("de-DE", {
+      day: "numeric",
+      month: "numeric"
+    });
+
+    statusClass = "phase-future";
+
+  } else if (heute >= startDate && heute <= endDate) {
 
     if (phase.untilRace) {
-      endDate = new Date(raceDate);
-    } else {
-      endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + (phase.durationWeeks * 7));
-    }
 
-    const card = document.createElement("div");
-    card.classList.add("phase-card", statusClass);
-
-    let statusText = "";
-    let statusClass = "";
-
-    if (heute < startDate) {
-
-      statusText = "ab " + startDate.toLocaleDateString("de-DE", {
-        day: "numeric",
-        month: "numeric"
-      });
-
-      statusClass = "phase-future";
-
-    } else if (heute >= startDate && heute <= endDate) {
-
-      if (phase.untilRace) {
-
-        const diffDays = Math.ceil((raceDate - heute) / (1000 * 60 * 60 * 24));
-        statusText = diffDays + " Tage";
-
-      } else {
-
-        const diffDays = Math.floor((heute - startDate) / (1000 * 60 * 60 * 24));
-        const currentWeek = Math.floor(diffDays / 7) + 1;
-        statusText = "Woche " + currentWeek + "/" + phase.durationWeeks;
-      }
-
-      statusClass = "phase-active";
+      const diffDays = Math.ceil((raceDate - heute) / (1000 * 60 * 60 * 24));
+      statusText = diffDays + " Tage";
 
     } else {
 
-      statusText = "✔";
-      statusClass = "phase-complete";
+      const diffDays = Math.floor((heute - startDate) / (1000 * 60 * 60 * 24));
+      const currentWeek = Math.floor(diffDays / 7) + 1;
+
+      statusText = "Woche " + currentWeek + "/" + phase.durationWeeks;
     }
 
+    statusClass = "phase-active";
+
+  } else {
+
+    statusText = "✔";
+    statusClass = "phase-complete";
+  }
+
+  card.classList.add(statusClass);
+
+  card.innerHTML = `
+    <div class="phase-title">${phase.name}</div>
+    <div class="phase-sub">${phase.subtitle}</div>
+    <div class="phase-status">${statusText}</div>
+  `;
+
+  phasesContainer.appendChild(card);
+
+});
+    
     card.innerHTML = `
       <div class="phase-title">${phase.name}</div>
       <div class="phase-sub">${phase.subtitle}</div>
@@ -249,6 +262,7 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
 
