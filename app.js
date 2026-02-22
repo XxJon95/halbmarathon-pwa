@@ -195,7 +195,7 @@ if (phasesContainer) {
     }
 
     const card = document.createElement("div");
-    card.classList.add("phase-card", `phase-${index + 1}`);
+    card.classList.add("phase-card", statusClass);
 
     let statusText = "";
     let statusClass = "";
@@ -207,7 +207,7 @@ if (phasesContainer) {
         month: "numeric"
       });
 
-      statusClass = "status-future";
+      statusClass = "phase-future";
 
     } else if (heute >= startDate && heute <= endDate) {
 
@@ -215,21 +215,20 @@ if (phasesContainer) {
 
         const diffDays = Math.ceil((raceDate - heute) / (1000 * 60 * 60 * 24));
         statusText = diffDays + " Tage";
-        statusClass = "status-active";
 
       } else {
 
         const diffDays = Math.floor((heute - startDate) / (1000 * 60 * 60 * 24));
         const currentWeek = Math.floor(diffDays / 7) + 1;
-
         statusText = "Woche " + currentWeek + "/" + phase.durationWeeks;
-        statusClass = "status-active";
       }
+
+      statusClass = "phase-active";
 
     } else {
 
       statusText = "✔";
-      statusClass = "status-complete";
+      statusClass = "phase-complete";
     }
 
     card.innerHTML = `
@@ -250,6 +249,7 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
 
