@@ -1,4 +1,4 @@
-const CACHE_NAME = "halbmarathon-cache-v27";
+const CACHE_NAME = "halbmarathon-cache-v28";
 
 const urlsToCache = [
   "./",
@@ -21,6 +21,7 @@ self.addEventListener("fetch", event => {
       .then(response => response || fetch(event.request))
   );
 });
+
 
 
 
