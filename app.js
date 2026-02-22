@@ -242,16 +242,6 @@ if (phasesContainer) {
 
   phasesContainer.appendChild(card);
 
-});
-    
-    card.innerHTML = `
-      <div class="phase-title">${phase.name}</div>
-      <div class="phase-sub">${phase.subtitle}</div>
-      <div class="phase-status ${statusClass}">${statusText}</div>
-    `;
-
-    phasesContainer.appendChild(card);
-
   });
 
 }
@@ -262,12 +252,3 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
-
-
-
-
-
-
-
-
-
