@@ -261,23 +261,34 @@ if (phasesContainer) {
 }
 
 const panel = document.getElementById("dev-panel");
+const applyButton = document.getElementById("dev-apply");
 
-document.addEventListener("keydown", (e) => {
-  if (e.key === "d") {
-    panel.classList.toggle("hidden");
-  }
-});
+if (panel) {
 
-document.getElementById("dev-apply").addEventListener("click", () => {
-  DEV_SETTINGS.date = document.getElementById("dev-date").value || null;
-  DEV_SETTINGS.start = document.getElementById("dev-start").value;
-  DEV_SETTINGS.race = document.getElementById("dev-race").value;
-  DEV_SETTINGS.p1 = parseInt(document.getElementById("dev-p1").value);
-  DEV_SETTINGS.p2 = parseInt(document.getElementById("dev-p2").value);
-  DEV_SETTINGS.p4 = parseInt(document.getElementById("dev-p4").value);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "d") {
+      panel.classList.toggle("hidden");
+    }
+  });
 
-  location.reload();
-});
+}
+
+if (applyButton) {
+
+  applyButton.addEventListener("click", () => {
+
+    DEV_SETTINGS.date = document.getElementById("dev-date")?.value || null;
+    DEV_SETTINGS.start = document.getElementById("dev-start")?.value;
+    DEV_SETTINGS.race = document.getElementById("dev-race")?.value;
+    DEV_SETTINGS.p1 = parseInt(document.getElementById("dev-p1")?.value);
+    DEV_SETTINGS.p2 = parseInt(document.getElementById("dev-p2")?.value);
+    DEV_SETTINGS.p4 = parseInt(document.getElementById("dev-p4")?.value);
+
+    location.reload();
+
+  });
+
+}
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
@@ -285,6 +296,7 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
 
