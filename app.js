@@ -23,8 +23,25 @@ function parseCSVLine(line) {
     return result.map(field => field.replace(/^"|"$/g, ""));
 }
 
+function addWeeks(dateString, weeks) {
+  const d = new Date(dateString);
+  d.setDate(d.getDate() + weeks * 7);
+  return d.toISOString().split("T")[0];
+}
+
+let DEV_SETTINGS = {
+  date: null,
+  start: "2026-01-01",
+  race: "2026-07-05",
+  p1: 8,
+  p2: 8,
+  p4: 2
+};
+
 /* HEUTIGES DATUM */
-const heute = new Date();
+const heute = DEV_SETTINGS.date 
+  ? new Date(DEV_SETTINGS.date)
+  : new Date();
 heute.setHours(0, 0, 0, 0);
 
 document.getElementById("datum").innerText =
@@ -103,8 +120,8 @@ fetch(sheetURL)
 
 /* COUNTDOWN */
 
-const trainingsStart = new Date("2026-01-01");
-const wettkampf = new Date("2026-07-05");
+const trainingsStart = new Date(DEV_SETTINGS.start);
+const raceDate = new Date(DEV_SETTINGS.race);
 
 const gesamtTage = Math.ceil((wettkampf - trainingsStart) / (1000*60*60*24));
 const restTage = Math.ceil((wettkampf - heute) / (1000*60*60*24));
@@ -170,10 +187,10 @@ if (restTage > 0) {
 const raceDate = new Date("2026-07-05");
 
 const phases = [
-  { name: "Phase 1", subtitle: "Initial", start: "2026-01-01", durationWeeks: 8 },
-  { name: "Phase 2", subtitle: "Progression", start: "2026-02-26", durationWeeks: 8 },
-  { name: "Phase 3", subtitle: "Taper", start: "2026-04-23", untilRace: true },
-  { name: "Phase 4", subtitle: "Recovery", start: "2026-07-06", durationWeeks: 2 }
+  { name: "Phase 1", subtitle: "Initial", start: DEV_SETTINGS.start, durationWeeks: DEV_SETTINGS.p1 },
+  { name: "Phase 2", subtitle: "Progression", start: addWeeks(DEV_SETTINGS.start, DEV_SETTINGS.p1), durationWeeks: DEV_SETTINGS.p2 },
+  { name: "Phase 3", subtitle: "Taper", start: addWeeks(addWeeks(DEV_SETTINGS.start, DEV_SETTINGS.p1), DEV_SETTINGS.p2), untilRace: true },
+  { name: "Phase 4", subtitle: "Recovery", start: DEV_SETTINGS.race, durationWeeks: DEV_SETTINGS.p4 }
 ];
 
 const phasesContainer = document.getElementById("phases-container");
@@ -245,10 +262,30 @@ if (phasesContainer) {
 
 }
 
+const panel = document.getElementById("dev-panel");
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "d") {
+    panel.classList.toggle("hidden");
+  }
+});
+
+document.getElementById("dev-apply").addEventListener("click", () => {
+  DEV_SETTINGS.date = document.getElementById("dev-date").value || null;
+  DEV_SETTINGS.start = document.getElementById("dev-start").value;
+  DEV_SETTINGS.race = document.getElementById("dev-race").value;
+  DEV_SETTINGS.p1 = parseInt(document.getElementById("dev-p1").value);
+  DEV_SETTINGS.p2 = parseInt(document.getElementById("dev-p2").value);
+  DEV_SETTINGS.p4 = parseInt(document.getElementById("dev-p4").value);
+
+  location.reload();
+});
+
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
