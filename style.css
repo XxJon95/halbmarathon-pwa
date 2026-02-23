@@ -249,6 +249,44 @@ h1 span {
 }
 
 /* =========================
+   NEXT DAYS
+========================= */
+
+.upcoming-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 0 8px 12px;
+  scrollbar-width: none;
+}
+
+.upcoming-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.upcoming-card {
+  min-width: 110px;
+  max-width: 110px;
+  background: rgba(16, 32, 64, 0.6);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  border-radius: 14px;
+  padding: 10px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.upcoming-date {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-bottom: 6px;
+}
+
+.upcoming-training {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* =========================
    DESKTOP ENHANCEMENT
 ========================= */
 
@@ -324,4 +362,5 @@ h1 span {
 .hidden {
   display: none;
 }
+
 
