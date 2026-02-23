@@ -109,6 +109,14 @@ h1 span {
   margin-bottom: 20px;
 }
 
+.countdown-finish {
+  font-size: clamp(20px, 5vw, 28px);
+  font-weight: 700;
+  color: white;
+  text-align: left;
+  text-shadow: 0 0 10px rgba(255,255,255,0.6);
+}
+
 /* =========================
    SECTION HEADER
 ========================= */
@@ -316,3 +324,4 @@ h1 span {
 .hidden {
   display: none;
 }
+
