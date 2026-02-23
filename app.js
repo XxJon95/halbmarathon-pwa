@@ -29,7 +29,7 @@ function addWeeks(dateString, weeks) {
   return d.toISOString().split("T")[0];
 }
 
-let DEV_SETTINGS = {
+let DEV_SETTINGS = JSON.parse(localStorage.getItem("HM_DEV_SETTINGS")) || {
   date: null,
   start: "2026-01-01",
   race: "2026-07-05",
@@ -280,6 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 🔹 Apply Button
   if (applyButton) {
+
     applyButton.addEventListener("click", () => {
 
       DEV_SETTINGS.date = document.getElementById("dev-date")?.value || null;
@@ -289,8 +290,13 @@ document.addEventListener("DOMContentLoaded", () => {
       DEV_SETTINGS.p2 = parseInt(document.getElementById("dev-p2")?.value);
       DEV_SETTINGS.p4 = parseInt(document.getElementById("dev-p4")?.value);
 
+      // 🔥 Persistenz
+      localStorage.setItem("HM_DEV_SETTINGS", JSON.stringify(DEV_SETTINGS));
+
       location.reload();
+
     });
+
   }
 
 });
@@ -301,6 +307,7 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
 
