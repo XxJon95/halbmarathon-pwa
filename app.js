@@ -97,7 +97,10 @@ fetch(sheetURL)
             else {
                 const parsedDate = new Date(rawDate);
                 if (!isNaN(parsedDate)) {
-                    sheetDateISO = parsedDate.toISOString().split("T")[0];
+                    sheetDateISO =
+                      parsedDate.getFullYear() + "-" +
+                      String(parsedDate.getMonth() + 1).padStart(2, "0") + "-" +
+                      String(parsedDate.getDate()).padStart(2, "0");
                 }
             }
 
@@ -136,7 +139,10 @@ fetch(sheetURL)
           for (let d = 1; d <= 5; d++) {
 
             const nextDate = new Date(heute.getTime() + d * msPerDay);
-            const nextISO = nextDate.toISOString().split("T")[0];
+            const nextISO =
+              nextDate.getFullYear() + "-" +
+              String(nextDate.getMonth() + 1).padStart(2, "0") + "-" +
+              String(nextDate.getDate()).padStart(2, "0");
 
             let trainingText = "—";
 
@@ -383,6 +389,7 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
 
