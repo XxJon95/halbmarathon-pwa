@@ -136,11 +136,32 @@ const restTage = Math.ceil((raceDate - heute) / (1000*60*60*24));
 const countdownText = document.getElementById("countdown-text");
 const progressBar = document.getElementById("progress-bar");
 
-if (restTage > 0) {
+const msPerDay = 1000 * 60 * 60 * 24;
+const diffDays = Math.floor((raceDate - heute) / msPerDay);
 
-  if (restTage > 30) {
+if (heute.getTime() === raceDate.getTime()) {
 
-    const restWochen = Math.ceil(restTage / 7);
+  countdownText.innerHTML = `
+    <div class="countdown-finish">
+      Heute ist der große Tag!
+    </div>
+  `;
+  progressBar.style.width = "100%";
+
+} else if (heute > raceDate) {
+
+  countdownText.innerHTML = `
+    <div class="countdown-finish">
+      Geschafft!
+    </div>
+  `;
+  progressBar.style.width = "100%";
+
+} else {
+
+  if (diffDays > 30) {
+
+    const restWochen = Math.ceil(diffDays / 7);
 
     countdownText.innerHTML = `
       <div class="countdown-line-main">
@@ -155,43 +176,21 @@ if (restTage > 0) {
 
     countdownText.innerHTML = `
       <div class="countdown-line-main">
-        Noch <span class="big-number">${restTage}</span> Tage
+        Noch <span class="big-number">${diffDays}</span> Tage
       </div>
       <div class="countdown-line-sub">
         bis zum Halbmarathon
       </div>
     `;
-
   }
 
-  const vergangeneTage = gesamtTage - restTage;
+  const vergangeneTage = Math.floor((heute - trainingsStart) / msPerDay);
   let fortschritt = (vergangeneTage / gesamtTage) * 100;
 
   if (fortschritt < 0) fortschritt = 0;
   if (fortschritt > 100) fortschritt = 100;
 
   progressBar.style.width = fortschritt + "%";
-
-} else if (restTage === 0) {
-
-  countdownText.innerHTML = `
-    <div class="countdown-finish">
-      Heute ist der große Tag!
-    </div>
-  `;
-
-  progressBar.style.width = "100%";
-
-} else {
-
-  countdownText.innerHTML = `
-    <div class="countdown-finish">
-      Geschafft!
-    </div>
-  `;
-
-  progressBar.style.width = "100%";
-
 }
 
 /* =========================
@@ -326,6 +325,7 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
 
