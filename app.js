@@ -121,7 +121,66 @@ fetch(sheetURL)
                 return;
             }
         }
+        
+        /* =========================
+           NEXT 5 DAYS PREVIEW
+        ========================= */
 
+        const upcomingContainer = document.getElementById("upcoming-container");
+
+        if (upcomingContainer) {
+    
+          upcomingContainer.innerHTML = "";
+
+          const msPerDay = 1000 * 60 * 60 * 24;
+
+          for (let d = 1; d <= 5; d++) {
+
+            const nextDate = new Date(heute.getTime() + d * msPerDay);
+            const nextISO = nextDate.toISOString().split("T")[0];
+
+            let trainingText = "—";
+
+            for (let i = 1; i < zeilen.length; i++) {
+
+              const werte = parseCSVLine(zeilen[i]);
+              const rawDate = werte[index.date]?.trim();
+
+              if (!rawDate) continue;
+
+              let sheetDateISO = "";
+
+              if (rawDate.includes(".")) {
+                const parts = rawDate.split(".");
+                sheetDateISO = `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+              } else {
+                const parsedDate = new Date(rawDate);
+                if (!isNaN(parsedDate)) {
+                  sheetDateISO = parsedDate.toISOString().split("T")[0];
+                }
+              }
+
+              if (sheetDateISO === nextISO) {
+                trainingText = werte[index.training] || "—";
+                break;
+              }
+            }
+
+            const card = document.createElement("div");
+            card.classList.add("upcoming-card");
+
+            card.innerHTML = `
+              <div class="upcoming-date">
+                ${nextDate.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })}
+              </div>
+              <div class="upcoming-training">
+                ${trainingText}
+              </div>
+            `;
+
+            upcomingContainer.appendChild(card);
+          }
+        }
     });
 
 /* COUNTDOWN */
@@ -325,6 +384,7 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
 
