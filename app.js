@@ -23,6 +23,12 @@ function parseCSVLine(line) {
     return result.map(field => field.replace(/^"|"$/g, ""));
 }
 
+function addDays(dateString, days) {
+  const d = new Date(dateString);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
 function addWeeks(dateString, weeks) {
   const d = new Date(dateString);
   d.setDate(d.getDate() + weeks * 7);
@@ -165,14 +171,21 @@ if (restTage > 0) {
 
   progressBar.style.width = fortschritt + "%";
 
+} else if (restTage === 0) {
+
+  countdownText.innerHTML = `
+    <div class="countdown-finish">
+      Heute ist der große Tag!
+    </div>
+  `;
+
+  progressBar.style.width = "100%";
+
 } else {
 
   countdownText.innerHTML = `
-    <div class="countdown-line-main">
-      <span class="big-number">Heute</span>
-    </div>
-    <div class="countdown-line-sub">
-      ist der große Tag!
+    <div class="countdown-finish">
+      Geschafft!
     </div>
   `;
 
@@ -188,7 +201,12 @@ const phases = [
   { name: "Phase 1", subtitle: "Initial", start: DEV_SETTINGS.start, durationWeeks: DEV_SETTINGS.p1 },
   { name: "Phase 2", subtitle: "Progression", start: addWeeks(DEV_SETTINGS.start, DEV_SETTINGS.p1), durationWeeks: DEV_SETTINGS.p2 },
   { name: "Phase 3", subtitle: "Taper", start: addWeeks(addWeeks(DEV_SETTINGS.start, DEV_SETTINGS.p1), DEV_SETTINGS.p2), untilRace: true },
-  { name: "Phase 4", subtitle: "Recovery", start: DEV_SETTINGS.race, durationWeeks: DEV_SETTINGS.p4 }
+  { 
+    name: "Phase 4",
+    subtitle: "Recovery",
+    start: addDays(DEV_SETTINGS.race, 1),
+    durationWeeks: DEV_SETTINGS.p4
+  }
 ];
 
 const phasesContainer = document.getElementById("phases-container");
@@ -307,6 +325,7 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
 
