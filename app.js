@@ -128,6 +128,7 @@ fetch(sheetURL)
 
 const trainingsStart = new Date(DEV_SETTINGS.start);
 const raceDate = new Date(DEV_SETTINGS.race);
+raceDate.setHours(0, 0, 0, 0);
 
 const gesamtTage = Math.ceil((raceDate - trainingsStart) / (1000*60*60*24));
 const restTage = Math.ceil((raceDate - heute) / (1000*60*60*24));
@@ -325,6 +326,7 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
 
