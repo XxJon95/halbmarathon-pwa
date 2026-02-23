@@ -111,14 +111,13 @@ fetch(sheetURL)
 
                 document.getElementById("pace").innerText =
                     werte[index.pace] || "-";
-
+            
                 document.getElementById("heartrate").innerText =
                     werte[index.heartrate] || "-";
 
                 document.getElementById("notiz").innerText =
-                    werte[index.notiz] || "Heute kein Training geplant.";
+                werte[index.notiz] || "Heute kein Training geplant.";
 
-                return;
             }
         }
         
@@ -384,6 +383,7 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js");
     });
 }
+
 
 
 
