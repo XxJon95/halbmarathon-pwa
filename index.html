@@ -6,16 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Halbmarathon Sommer 2026</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
 </head>
 
 <body>
-    <div class="container">
+    <div id="auth-screen" class="container hidden">
+        <div class="card auth-card">
+            <h2>Login</h2>
+            <button id="login-btn" class="week-open-button" type="button">Mit Google anmelden</button>
+        </div>
+    </div>
 
-        <h1>Halbmarathon <span>Sommer 2026</span></h1>
+    <div id="app-screen" class="container hidden">
 
-        <!-- COUNTDOWN -->
+        <h1><span class="title-main">Halbmarathon</span><span class="title-sub">Sommer 2026</span></h1>
+
         <div class="card countdown-card">
             <div class="countdown-main" id="countdown-text"></div>
 
@@ -29,13 +38,11 @@
             </div>
         </div>
 
-        <!-- HEUTIGES TRAINING HEADER -->
         <div class="section-header">
             <h2>HEUTIGES TRAINING</h2>
             <div class="section-date" id="datum"></div>
         </div>
 
-        <!-- TRAINING CARD -->
         <div class="card">
             <div class="training-grid">
                 <div class="row">
@@ -60,13 +67,11 @@
             </div>
         </div>
 
-        <!-- NOTIZ -->
         <div class="card note-card">
             <h2>Notiz</h2>
             <p id="notiz"></p>
         </div>
 
-        <!-- TRAININGSPHASEN -->
         <div class="section-header">
             <h2>TRAININGSPHASEN</h2>
         </div>
@@ -74,12 +79,19 @@
         <div class="phases-container" id="phases-container"></div>
 
         <div class="section-header">
-            <h2>NÄCHSTE TAGE</h2>
+            <h2>N&Auml;CHSTE TAGE</h2>
         </div>
 
         <div id="upcoming-container" class="upcoming-scroll"></div>
 
-        <button id="open-weeks-overlay" class="week-open-button" type="button">Wochenübersicht öffnen</button>
+        <button id="open-weeks-overlay" class="week-open-button" type="button">Wochen&uuml;bersicht</button>
+
+        <button id="settings-menu-toggle" class="settings-fab" type="button" aria-label="Settings" aria-haspopup="true" aria-expanded="false"></button>
+
+        <div id="settings-menu" class="settings-menu hidden" role="menu" aria-label="Settings menu">
+            <button id="open-settings-modal" class="settings-menu-item" type="button" role="menuitem">Einstellungen</button>
+            <button id="logout-btn" class="settings-menu-item danger" type="button" role="menuitem">Logout</button>
+        </div>
 
     </div>
 
@@ -88,63 +100,110 @@
             <button id="weeks-close" class="weeks-close-btn" type="button" aria-label="Schliessen">&times;</button>
 
             <div class="week-toolbar">
-                <button id="week-prev" class="week-nav-button" type="button">Vorherige Woche</button>
+                <button id="week-prev" class="week-nav-button" type="button" aria-label="Vorherige Woche">&#8592;</button>
                 <div class="week-select-wrap">
                     <button id="week-select-trigger" class="week-select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
                         <span id="week-select-primary" class="week-select-primary">Woche -</span>
                         <span id="week-select-secondary" class="week-select-secondary">-</span>
-                        <span class="week-select-caret">▾</span>
+                        <span class="week-select-caret">&#9662;</span>
                     </button>
                     <div id="week-select-menu" class="week-select-menu hidden" role="listbox"></div>
                 </div>
-                <button id="week-next" class="week-nav-button" type="button">N&auml;chste Woche</button>
+                <button id="week-next" class="week-nav-button" type="button" aria-label="Naechste Woche">&#8594;</button>
             </div>
 
             <div id="week-days" class="week-days"></div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <div id="settings-overlay" class="weeks-overlay hidden">
+        <div class="weeks-modal settings-modal">
+            <button id="settings-close" class="weeks-close-btn" type="button" aria-label="Schliessen">&times;</button>
 
-    <div id="dev-panel" class="dev-panel hidden">
-        <h3>Dev Panel</h3>
+            <section class="settings-block">
+                <h3>Projektname</h3>
+                <div class="settings-form-grid settings-project-grid">
+                    <label class="settings-field">
+                        <span>Name</span>
+                        <input id="settings-event-name" type="text" placeholder="Halbmarathon">
+                    </label>
+                    <label class="settings-field">
+                        <span>Saison</span>
+                        <select id="settings-season">
+                            <option value="Fruehling">Fr&uuml;hling</option>
+                            <option value="Sommer">Sommer</option>
+                            <option value="Herbst">Herbst</option>
+                            <option value="Winter">Winter</option>
+                        </select>
+                    </label>
+                    <label class="settings-field">
+                        <span>Jahr</span>
+                        <select id="settings-year"></select>
+                    </label>
+                </div>
+            </section>
 
-        <div class="dev-section">
-            <h4>Simulation</h4>
+            <section class="settings-block">
+                <h3>Trainingseinstellungen</h3>
 
-            <label>Simuliertes Datum</label>
-            <input type="date" id="sim-date">
+                <div class="settings-form-grid settings-date-grid">
+                    <label class="settings-field">
+                        <span>Trainingsstart</span>
+                        <input id="settings-start" type="date">
+                    </label>
+                    <label class="settings-field">
+                        <span>Wettkampftag</span>
+                        <input id="settings-race" type="date">
+                    </label>
+                </div>
 
-            <div class="dev-actions">
-                <button id="sim-apply">Simulation anwenden</button>
-                <button id="sim-clear" class="ghost-btn">Simulation zuruecksetzen</button>
-            </div>
-        </div>
+                <div class="settings-phase-grid">
+                    <label class="settings-phase-item">
+                        <span class="settings-phase-title">Phase 1</span>
+                        <span class="settings-phase-sub">Initial</span>
+                        <input id="settings-p1" type="number" min="1">
+                        <span class="settings-phase-unit">Wochen</span>
+                    </label>
+                    <label class="settings-phase-item">
+                        <span class="settings-phase-title">Phase 2</span>
+                        <span class="settings-phase-sub">Progression</span>
+                        <input id="settings-p2" type="number" min="1">
+                        <span class="settings-phase-unit">Wochen</span>
+                    </label>
+                    <label class="settings-phase-item">
+                        <span class="settings-phase-title">Phase 3</span>
+                        <span class="settings-phase-sub">Taper</span>
+                        <input id="settings-p3" type="number" min="1">
+                        <span class="settings-phase-unit">Wochen</span>
+                    </label>
+                    <label class="settings-phase-item">
+                        <span class="settings-phase-title">Phase 4</span>
+                        <span class="settings-phase-sub">Recovery</span>
+                        <input id="settings-p4" type="number" min="1">
+                        <span class="settings-phase-unit">Wochen</span>
+                    </label>
+                </div>
 
-        <div class="dev-section">
-            <h4>Echte Planwerte</h4>
+                <div class="settings-form-grid">
+                    <label class="settings-field full">
+                        <span>Google Sheet CSV URL</span>
+                        <input id="settings-sheet-url" type="text" placeholder="https://docs.google.com/.../export?format=csv">
+                    </label>
+                </div>
+            </section>
 
-            <label>Trainingsstart</label>
-            <input type="date" id="plan-start">
-
-            <label>Wettkampftag</label>
-            <input type="date" id="plan-race">
-
-            <label>Phase 1 Wochen</label>
-            <input type="number" id="plan-p1" min="1">
-
-            <label>Phase 2 Wochen</label>
-            <input type="number" id="plan-p2" min="1">
-
-            <label>Phase 3 Wochen</label>
-            <input type="number" id="plan-p3" min="1">
-
-            <label>Phase 4 Wochen</label>
-            <input type="number" id="plan-p4" min="1">
-
-            <button id="plan-save">Planwerte speichern</button>
+            <p id="settings-error" class="settings-error hidden"></p>
+            <button id="settings-save" class="settings-save-button" type="button">Speichern</button>
         </div>
     </div>
+
+    <div id="global-loader" class="global-loader hidden" aria-hidden="true">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <div id="sync-indicator" class="sync-indicator hidden" aria-live="polite">Gespeichert &#10003;</div>
+
+    <script type="module" src="app.js"></script>
 </body>
 
 </html>
