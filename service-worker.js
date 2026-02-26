@@ -1,10 +1,13 @@
-const CACHE_NAME = "halbmarathon-cache-v50";
+const CACHE_NAME = "halbmarathon-cache-v52";
 
 const urlsToCache = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
+  "./firebase.js",
+  "./auth.js",
+  "./settingsStore.js",
   "./manifest.json"
 ];
 
