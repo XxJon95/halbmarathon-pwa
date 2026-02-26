@@ -1,21 +1,65 @@
-const sheetURL = "https://docs.google.com/spreadsheets/d/1wmLe1BIdWzQ2UYf0b20IRTae1E_a9eru0vd_bhDeRkw/export?format=csv";
+import { app, auth, db } from "./firebase.js";
+import { signInWithGoogle, signOutUser, onAuthChange } from "./auth.js";
+import { loadUserSettings, saveUserSettings } from "./settingsStore.js";
+
+const firebasePreparedModules = {
+  app,
+  auth,
+  db,
+  signInWithGoogle,
+  signOutUser,
+  onAuthChange,
+  loadUserSettings,
+  saveUserSettings
+};
+void firebasePreparedModules;
+
+const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1wmLe1BIdWzQ2UYf0b20IRTae1E_a9eru0vd_bhDeRkw/export?format=csv";
 
 const LEGACY_SETTINGS_KEY = "HM_DEV_SETTINGS";
 const PLAN_STORAGE_KEY = "HM_PLAN_SETTINGS";
-const SIM_STORAGE_KEY = "HM_SIM_SETTINGS";
+
+let ACTIVE_USER_UID = null;
+let APP_INITIALIZED_UID = null;
+let PLAN_SETTINGS = null;
+let TODAY_DATE = null;
+let SETTINGS_UI_BOUND = false;
+let HIDE_SYNC_INDICATOR_TIMEOUT = null;
+let HIDE_SYNC_INDICATOR_FADE_TIMEOUT = null;
 
 const DEFAULT_PLAN_SETTINGS = {
+  eventName: "Halbmarathon",
+  season: "Sommer",
+  year: 2026,
   start: "2026-01-01",
   race: "2026-07-05",
   p1: 8,
   p2: 8,
   p3: 4,
-  p4: 2
+  p4: 2,
+  sheetURL: DEFAULT_SHEET_URL
 };
 
-const DEFAULT_SIM_SETTINGS = {
-  date: null
-};
+const SEASON_OPTIONS = ["Fruehling", "Sommer", "Herbst", "Winter"];
+
+function normalizeEventName(value, fallback) {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  return trimmed || fallback;
+}
+
+function normalizeSeason(value, fallback) {
+  if (typeof value !== "string") return fallback;
+  const normalized = value.trim() === "Frühling" ? "Fruehling" : value.trim();
+  return SEASON_OPTIONS.includes(normalized) ? normalized : fallback;
+}
+
+function normalizeEventYear(value, fallback) {
+  const parsed = parseInt(value, 10);
+  if (!Number.isInteger(parsed)) return fallback;
+  if (parsed < 2026 || parsed > 2050) return fallback;
+  return parsed;
+}
 
 function safeJSONParse(value, fallback) {
   if (!value) return fallback;
@@ -40,6 +84,12 @@ function normalizeISODate(value, fallback) {
   return Number.isNaN(parsed.getTime()) ? fallback : value;
 }
 
+function normalizeSheetURL(value, fallback) {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  return trimmed || fallback;
+}
+
 function toISODate(date) {
   return (
     date.getFullYear() + "-" +
@@ -53,6 +103,20 @@ function formatISODateForDisplay(isoDate) {
   const parts = isoDate.split("-");
   if (parts.length !== 3) return isoDate;
   return `${parts[2]}.${parts[1]}.${parts[0]}`;
+}
+
+function formatSeasonLabel(seasonValue) {
+  if (seasonValue === "Fruehling") return "Frühling";
+  return seasonValue;
+}
+
+function escapeHTML(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function addDays(dateString, days) {
@@ -129,6 +193,90 @@ function setText(id, value) {
   if (el) el.innerText = value;
 }
 
+function debounce(fn, waitMs) {
+  let timeoutId = null;
+
+  return (...args) => {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      timeoutId = null;
+      fn(...args);
+    }, waitMs);
+  };
+}
+
+function updateBodyScrollLock() {
+  const weeksOverlay = document.getElementById("weeks-overlay");
+  const settingsOverlay = document.getElementById("settings-overlay");
+  const globalLoader = document.getElementById("global-loader");
+
+  const hasBlockingLayer =
+    (weeksOverlay && !weeksOverlay.classList.contains("hidden")) ||
+    (settingsOverlay && !settingsOverlay.classList.contains("hidden")) ||
+    (globalLoader && !globalLoader.classList.contains("hidden"));
+
+  document.body.classList.toggle("no-scroll", Boolean(hasBlockingLayer));
+}
+
+function setGlobalLoaderVisible(isVisible) {
+  const loader = document.getElementById("global-loader");
+  if (!loader) return;
+
+  loader.classList.toggle("hidden", !isVisible);
+  updateBodyScrollLock();
+}
+
+function showSyncIndicator() {
+  const indicator = document.getElementById("sync-indicator");
+  if (!indicator) return;
+
+  if (HIDE_SYNC_INDICATOR_FADE_TIMEOUT) {
+    clearTimeout(HIDE_SYNC_INDICATOR_FADE_TIMEOUT);
+  }
+
+  indicator.classList.remove("hidden");
+  requestAnimationFrame(() => {
+    indicator.classList.add("is-visible");
+  });
+
+  if (HIDE_SYNC_INDICATOR_TIMEOUT) {
+    clearTimeout(HIDE_SYNC_INDICATOR_TIMEOUT);
+  }
+
+  HIDE_SYNC_INDICATOR_TIMEOUT = setTimeout(() => {
+    indicator.classList.remove("is-visible");
+    HIDE_SYNC_INDICATOR_FADE_TIMEOUT = setTimeout(() => {
+      indicator.classList.add("hidden");
+      HIDE_SYNC_INDICATOR_FADE_TIMEOUT = null;
+    }, 250);
+  }, 2000);
+}
+
+function setSettingsError(message) {
+  const errorEl = document.getElementById("settings-error");
+  if (!errorEl) return;
+
+  if (message) {
+    errorEl.innerText = message;
+    errorEl.classList.remove("hidden");
+    return;
+  }
+
+  errorEl.innerText = "";
+  errorEl.classList.add("hidden");
+}
+
+const debouncedPersistUserSettings = debounce(async (uid, settings) => {
+  if (!uid) return;
+
+  try {
+    await saveUserSettings(uid, settings);
+    showSyncIndicator();
+  } catch (error) {
+    console.error("Firestore settings save failed, kept local cache:", error);
+  }
+}, 800);
+
 function hasDisplayValue(value) {
   if (value === null || value === undefined) return false;
   const normalized = String(value).trim();
@@ -143,28 +291,65 @@ function derivePhase3Weeks(startISO, raceISO, p1, p2) {
   return rawWeeks > 0 ? rawWeeks : DEFAULT_PLAN_SETTINGS.p3;
 }
 
-function loadSettings() {
+function normalizePlanSettings(rawSettings, fallbackSettings = DEFAULT_PLAN_SETTINGS) {
+  const eventName = normalizeEventName(rawSettings?.eventName, fallbackSettings.eventName);
+  const season = normalizeSeason(rawSettings?.season, fallbackSettings.season);
+  const year = normalizeEventYear(rawSettings?.year, fallbackSettings.year);
+  const start = normalizeISODate(rawSettings?.start, fallbackSettings.start);
+  const race = normalizeISODate(rawSettings?.race, fallbackSettings.race);
+  const p1 = toPositiveInt(rawSettings?.p1, fallbackSettings.p1);
+  const p2 = toPositiveInt(rawSettings?.p2, fallbackSettings.p2);
+  const p4 = toPositiveInt(rawSettings?.p4, fallbackSettings.p4);
+  const derivedP3 = derivePhase3Weeks(start, race, p1, p2);
+  const p3 = toPositiveInt(rawSettings?.p3, derivedP3);
+  const sheetURL = normalizeSheetURL(rawSettings?.sheetURL, fallbackSettings.sheetURL);
+
+  return { eventName, season, year, start, race, p1, p2, p3, p4, sheetURL };
+}
+
+function loadCachedSettings() {
   const legacy = safeJSONParse(localStorage.getItem(LEGACY_SETTINGS_KEY), {}) || {};
   const storedPlan = safeJSONParse(localStorage.getItem(PLAN_STORAGE_KEY), {}) || {};
-  const storedSim = safeJSONParse(localStorage.getItem(SIM_STORAGE_KEY), {}) || {};
 
-  const start = normalizeISODate(storedPlan.start ?? legacy.start, DEFAULT_PLAN_SETTINGS.start);
-  const race = normalizeISODate(storedPlan.race ?? legacy.race, DEFAULT_PLAN_SETTINGS.race);
-  const p1 = toPositiveInt(storedPlan.p1 ?? legacy.p1, DEFAULT_PLAN_SETTINGS.p1);
-  const p2 = toPositiveInt(storedPlan.p2 ?? legacy.p2, DEFAULT_PLAN_SETTINGS.p2);
-  const p4 = toPositiveInt(storedPlan.p4 ?? legacy.p4, DEFAULT_PLAN_SETTINGS.p4);
-  const derivedP3 = derivePhase3Weeks(start, race, p1, p2);
-  const p3 = toPositiveInt(storedPlan.p3 ?? legacy.p3, derivedP3);
-
-  const planSettings = { start, race, p1, p2, p3, p4 };
-  const simSettings = {
-    date: normalizeISODate(storedSim.date ?? legacy.date, DEFAULT_SIM_SETTINGS.date)
+  const rawPlan = {
+    eventName: storedPlan.eventName ?? legacy.eventName,
+    season: storedPlan.season ?? legacy.season,
+    year: storedPlan.year ?? legacy.year,
+    start: storedPlan.start ?? legacy.start,
+    race: storedPlan.race ?? legacy.race,
+    p1: storedPlan.p1 ?? legacy.p1,
+    p2: storedPlan.p2 ?? legacy.p2,
+    p3: storedPlan.p3 ?? legacy.p3,
+    p4: storedPlan.p4 ?? legacy.p4,
+    sheetURL: storedPlan.sheetURL ?? legacy.sheetURL ?? DEFAULT_PLAN_SETTINGS.sheetURL
   };
 
-  localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(planSettings));
-  localStorage.setItem(SIM_STORAGE_KEY, JSON.stringify(simSettings));
+  const planSettings = normalizePlanSettings(rawPlan, DEFAULT_PLAN_SETTINGS);
 
-  return { planSettings, simSettings };
+  localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(planSettings));
+
+  return planSettings;
+}
+
+async function loadSettingsForUser(uid) {
+  const cached = loadCachedSettings();
+
+  try {
+    let remoteSettings = await loadUserSettings(uid);
+
+    if (!remoteSettings) {
+      await saveUserSettings(uid, cached);
+      remoteSettings = cached;
+    }
+
+    const mergedPlan = normalizePlanSettings(remoteSettings, cached);
+    localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(mergedPlan));
+
+    return mergedPlan;
+  } catch (error) {
+    console.error("Firestore settings load failed, using local cache:", error);
+    return cached;
+  }
 }
 
 function renderCountdownDateLabels(planSettings) {
@@ -442,8 +627,8 @@ function setWeeksOverlayVisible(isVisible) {
   if (!overlay) return;
 
   overlay.classList.toggle("hidden", !isVisible);
-  document.body.classList.toggle("no-scroll", isVisible);
   if (!isVisible) setWeekMenuVisible(false);
+  updateBodyScrollLock();
 }
 
 function setupWeeksOverlayInteractions() {
@@ -461,6 +646,7 @@ function setupWeeksOverlayInteractions() {
   if (!openButton || !closeButton || !prevButton || !nextButton || !weekSelectTrigger || !weekSelectMenu || !weekSelectWrap || !overlay) return;
 
   openButton.addEventListener("click", () => {
+    setSettingsMenuVisible(false);
     setWeeksOverlayVisible(true);
     updateWeekSelectOptions();
     renderWeekOverlayContent();
@@ -542,6 +728,262 @@ function updateWeeksOverlayData(scheduleByDate, todayISO, startISO) {
   renderWeekOverlayContent();
 }
 
+function setSettingsMenuVisible(isVisible) {
+  const menu = document.getElementById("settings-menu");
+  const toggle = document.getElementById("settings-menu-toggle");
+  if (!menu || !toggle) return;
+
+  menu.classList.toggle("hidden", !isVisible);
+  toggle.setAttribute("aria-expanded", isVisible ? "true" : "false");
+}
+
+function setSettingsModalVisible(isVisible) {
+  const overlay = document.getElementById("settings-overlay");
+  if (!overlay) return;
+
+  overlay.classList.toggle("hidden", !isVisible);
+  if (!isVisible) setSettingsError("");
+  updateBodyScrollLock();
+}
+
+function populateYearSelectOptions() {
+  const yearSelect = document.getElementById("settings-year");
+  if (!yearSelect || yearSelect.options.length > 0) return;
+
+  for (let year = 2026; year <= 2050; year++) {
+    const option = document.createElement("option");
+    option.value = String(year);
+    option.innerText = String(year);
+    yearSelect.appendChild(option);
+  }
+}
+
+function populateSettingsForm(planSettings) {
+  const eventNameInput = document.getElementById("settings-event-name");
+  const seasonSelect = document.getElementById("settings-season");
+  const yearSelect = document.getElementById("settings-year");
+  const startInput = document.getElementById("settings-start");
+  const raceInput = document.getElementById("settings-race");
+  const p1Input = document.getElementById("settings-p1");
+  const p2Input = document.getElementById("settings-p2");
+  const p3Input = document.getElementById("settings-p3");
+  const p4Input = document.getElementById("settings-p4");
+  const sheetURLInput = document.getElementById("settings-sheet-url");
+
+  if (eventNameInput) eventNameInput.value = planSettings.eventName;
+  if (seasonSelect) seasonSelect.value = planSettings.season;
+  if (yearSelect) yearSelect.value = String(planSettings.year);
+  if (startInput) startInput.value = planSettings.start;
+  if (raceInput) raceInput.value = planSettings.race;
+  if (p1Input) p1Input.value = String(planSettings.p1);
+  if (p2Input) p2Input.value = String(planSettings.p2);
+  if (p3Input) p3Input.value = String(planSettings.p3);
+  if (p4Input) p4Input.value = String(planSettings.p4);
+  if (sheetURLInput) sheetURLInput.value = planSettings.sheetURL || "";
+}
+
+function collectSettingsDraft() {
+  return {
+    eventName: document.getElementById("settings-event-name")?.value || "",
+    season: document.getElementById("settings-season")?.value || "",
+    year: document.getElementById("settings-year")?.value || "",
+    start: document.getElementById("settings-start")?.value || "",
+    race: document.getElementById("settings-race")?.value || "",
+    p1: document.getElementById("settings-p1")?.value || "",
+    p2: document.getElementById("settings-p2")?.value || "",
+    p3: document.getElementById("settings-p3")?.value || "",
+    p4: document.getElementById("settings-p4")?.value || "",
+    sheetURL: document.getElementById("settings-sheet-url")?.value || ""
+  };
+}
+
+function validatePlanSettingsDraft(draft, fallbackSettings) {
+  const eventName = normalizeEventName(draft.eventName, "");
+  if (!eventName) {
+    return { isValid: false, error: "Bitte einen Projektnamen eintragen." };
+  }
+
+  const season = normalizeSeason(draft.season, "");
+  if (!season) {
+    return { isValid: false, error: "Bitte eine gueltige Saison waehlen." };
+  }
+
+  const year = normalizeEventYear(draft.year, 0);
+  if (!year) {
+    return { isValid: false, error: "Bitte ein Jahr zwischen 2026 und 2050 waehlen." };
+  }
+
+  const start = normalizeISODate(draft.start, "");
+  if (!start) {
+    return { isValid: false, error: "Bitte gueltigen Trainingsstart waehlen." };
+  }
+
+  const race = normalizeISODate(draft.race, "");
+  if (!race) {
+    return { isValid: false, error: "Bitte gueltigen Wettkampftag waehlen." };
+  }
+
+  const startDate = new Date(start + "T00:00:00");
+  const raceDate = new Date(race + "T00:00:00");
+  if (raceDate <= startDate) {
+    return { isValid: false, error: "Wettkampftag muss nach Trainingsstart liegen." };
+  }
+
+  const p1 = toPositiveInt(draft.p1, 0);
+  const p2 = toPositiveInt(draft.p2, 0);
+  const p3 = toPositiveInt(draft.p3, 0);
+  const p4 = toPositiveInt(draft.p4, 0);
+
+  if (!p1 || !p2 || !p3 || !p4) {
+    return { isValid: false, error: "Phase 1-4 muessen positive Zahlen sein." };
+  }
+
+  const sheetURL = normalizeSheetURL(draft.sheetURL, "");
+  if (!sheetURL || !/^https?:\/\//i.test(sheetURL)) {
+    return { isValid: false, error: "Bitte eine gueltige CSV URL eintragen." };
+  }
+
+  const nextSettings = normalizePlanSettings(
+    { eventName, season, year, start, race, p1, p2, p3, p4, sheetURL },
+    fallbackSettings || DEFAULT_PLAN_SETTINGS
+  );
+
+  return {
+    isValid: true,
+    error: "",
+    settings: nextSettings
+  };
+}
+
+function renderDateLabel(today) {
+  const datumEl = document.getElementById("datum");
+  if (!datumEl) return;
+
+  datumEl.innerText = today.toLocaleDateString("de-DE", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+}
+
+function renderProjectHeading(planSettings) {
+  const heading = document.querySelector("#app-screen h1");
+  if (!heading) return;
+
+  const seasonLabel = formatSeasonLabel(planSettings.season);
+  const safeEventName = escapeHTML(planSettings.eventName);
+  const safeSeasonLabel = escapeHTML(seasonLabel);
+  const safeYear = escapeHTML(planSettings.year);
+  heading.innerHTML = `<span class="title-main">${safeEventName}</span><span class="title-sub">${safeSeasonLabel} ${safeYear}</span>`;
+}
+
+function renderAppWithCurrentState() {
+  if (!PLAN_SETTINGS || !TODAY_DATE) return;
+
+  const todayISO = toISODate(TODAY_DATE);
+
+  renderProjectHeading(PLAN_SETTINGS);
+  renderDateLabel(TODAY_DATE);
+  renderCountdownDateLabels(PLAN_SETTINGS);
+  renderCountdown(PLAN_SETTINGS, TODAY_DATE);
+  renderPhases(PLAN_SETTINGS, TODAY_DATE);
+  renderTodayEntry(null);
+  renderUpcomingPreview(new Map(), TODAY_DATE);
+  updateWeeksOverlayData(new Map(), todayISO, PLAN_SETTINGS.start);
+  loadTrainingData(todayISO, TODAY_DATE);
+}
+
+function handleSettingsSaveRequest() {
+  if (!PLAN_SETTINGS) return;
+
+  const draft = collectSettingsDraft();
+  const validation = validatePlanSettingsDraft(draft, PLAN_SETTINGS);
+
+  if (!validation.isValid) {
+    setSettingsError(validation.error);
+    return;
+  }
+
+  setSettingsError("");
+
+  PLAN_SETTINGS = validation.settings;
+  localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(PLAN_SETTINGS));
+  setSettingsModalVisible(false);
+  renderAppWithCurrentState();
+  debouncedPersistUserSettings(ACTIVE_USER_UID, PLAN_SETTINGS);
+}
+
+function setupSettingsUI() {
+  if (SETTINGS_UI_BOUND) return;
+
+  populateYearSelectOptions();
+
+  const settingsToggle = document.getElementById("settings-menu-toggle");
+  const settingsMenu = document.getElementById("settings-menu");
+  const openSettingsButton = document.getElementById("open-settings-modal");
+  const logoutButton = document.getElementById("logout-btn");
+  const settingsOverlay = document.getElementById("settings-overlay");
+  const settingsCloseButton = document.getElementById("settings-close");
+  const settingsSaveButton = document.getElementById("settings-save");
+
+  if (!settingsToggle || !settingsMenu || !openSettingsButton || !logoutButton || !settingsOverlay || !settingsCloseButton || !settingsSaveButton) {
+    return;
+  }
+
+  settingsToggle.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const isOpen = !settingsMenu.classList.contains("hidden");
+    setSettingsMenuVisible(!isOpen);
+  });
+
+  openSettingsButton.addEventListener("click", () => {
+    setSettingsMenuVisible(false);
+    populateSettingsForm(PLAN_SETTINGS || DEFAULT_PLAN_SETTINGS);
+    setSettingsModalVisible(true);
+  });
+
+  logoutButton.addEventListener("click", async () => {
+    setSettingsMenuVisible(false);
+    setSettingsModalVisible(false);
+    try {
+      await signOutUser();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  });
+
+  settingsCloseButton.addEventListener("click", () => {
+    setSettingsModalVisible(false);
+  });
+
+  settingsOverlay.addEventListener("click", (event) => {
+    if (event.target === settingsOverlay) {
+      setSettingsModalVisible(false);
+    }
+  });
+
+  settingsSaveButton.addEventListener("click", () => {
+    handleSettingsSaveRequest();
+  });
+
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!target || settingsMenu.classList.contains("hidden")) return;
+    if (settingsToggle.contains(target) || settingsMenu.contains(target)) return;
+    setSettingsMenuVisible(false);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      setSettingsMenuVisible(false);
+      setSettingsModalVisible(false);
+    }
+  });
+
+  SETTINGS_UI_BOUND = true;
+}
+
 function renderCountdown(planSettings, today) {
   const trainingsStart = new Date(planSettings.start + "T00:00:00");
   const raceDate = new Date(planSettings.race + "T00:00:00");
@@ -555,6 +997,7 @@ function renderCountdown(planSettings, today) {
   const msPerDay = 1000 * 60 * 60 * 24;
   const totalDays = Math.max(1, Math.ceil((raceDate - trainingsStart) / msPerDay));
   const diffDays = Math.floor((raceDate - today) / msPerDay);
+  const eventName = escapeHTML(planSettings.eventName || "Halbmarathon");
 
   if (today.getTime() === raceDate.getTime()) {
     countdownText.innerHTML = `
@@ -584,7 +1027,7 @@ function renderCountdown(planSettings, today) {
         Noch <span class="big-number">${remainingWeeks}</span> Wochen
       </div>
       <div class="countdown-line-sub">
-        bis zum Halbmarathon
+        bis zum ${eventName}
       </div>
     `;
   } else {
@@ -594,7 +1037,7 @@ function renderCountdown(planSettings, today) {
         Noch <span class="big-number">${diffDays}</span> ${tageLabel}
       </div>
       <div class="countdown-line-sub">
-        bis zum Halbmarathon
+        bis zum ${eventName}
       </div>
     `;
   }
@@ -678,74 +1121,8 @@ function renderPhases(planSettings, today) {
   });
 }
 
-function setupDevPanel(planSettings, simSettings) {
-  const panel = document.getElementById("dev-panel");
-  if (!panel) return;
-
-  const simDateInput = document.getElementById("sim-date");
-  const simApplyButton = document.getElementById("sim-apply");
-  const simClearButton = document.getElementById("sim-clear");
-
-  const planStartInput = document.getElementById("plan-start");
-  const planRaceInput = document.getElementById("plan-race");
-  const planP1Input = document.getElementById("plan-p1");
-  const planP2Input = document.getElementById("plan-p2");
-  const planP3Input = document.getElementById("plan-p3");
-  const planP4Input = document.getElementById("plan-p4");
-  const planSaveButton = document.getElementById("plan-save");
-
-  if (simDateInput) simDateInput.value = simSettings.date || "";
-
-  if (planStartInput) planStartInput.value = planSettings.start;
-  if (planRaceInput) planRaceInput.value = planSettings.race;
-  if (planP1Input) planP1Input.value = planSettings.p1;
-  if (planP2Input) planP2Input.value = planSettings.p2;
-  if (planP3Input) planP3Input.value = planSettings.p3;
-  if (planP4Input) planP4Input.value = planSettings.p4;
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key.toLowerCase() === "d") {
-      panel.classList.toggle("hidden");
-    }
-  });
-
-  if (simApplyButton) {
-    simApplyButton.addEventListener("click", () => {
-      const updatedSim = {
-        date: normalizeISODate(simDateInput?.value, null)
-      };
-
-      localStorage.setItem(SIM_STORAGE_KEY, JSON.stringify(updatedSim));
-      location.reload();
-    });
-  }
-
-  if (simClearButton) {
-    simClearButton.addEventListener("click", () => {
-      localStorage.setItem(SIM_STORAGE_KEY, JSON.stringify({ date: null }));
-      location.reload();
-    });
-  }
-
-  if (planSaveButton) {
-    planSaveButton.addEventListener("click", () => {
-      const updatedPlan = {
-        start: normalizeISODate(planStartInput?.value, planSettings.start),
-        race: normalizeISODate(planRaceInput?.value, planSettings.race),
-        p1: toPositiveInt(planP1Input?.value, planSettings.p1),
-        p2: toPositiveInt(planP2Input?.value, planSettings.p2),
-        p3: toPositiveInt(planP3Input?.value, planSettings.p3),
-        p4: toPositiveInt(planP4Input?.value, planSettings.p4)
-      };
-
-      localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(updatedPlan));
-      location.reload();
-    });
-  }
-}
-
 function loadTrainingData(todayISO, today) {
-  fetch(sheetURL)
+  fetch(PLAN_SETTINGS?.sheetURL || DEFAULT_SHEET_URL)
     .then((response) => response.text())
     .then((data) => {
       const lines = data.trim().split(/\r?\n/).filter(Boolean);
@@ -789,37 +1166,82 @@ function loadTrainingData(todayISO, today) {
     });
 }
 
-const { planSettings: PLAN_SETTINGS, simSettings: SIM_SETTINGS } = loadSettings();
+function showAuthScreen() {
+  const authScreen = document.getElementById("auth-screen");
+  const appScreen = document.getElementById("app-screen");
 
-const heute = SIM_SETTINGS.date
-  ? new Date(SIM_SETTINGS.date + "T00:00:00")
-  : new Date();
-heute.setHours(0, 0, 0, 0);
+  if (authScreen) authScreen.classList.remove("hidden");
+  if (appScreen) appScreen.classList.add("hidden");
 
-const heuteISO = toISODate(heute);
+  setSettingsMenuVisible(false);
+  setSettingsModalVisible(false);
+  setWeeksOverlayVisible(false);
+}
 
-const datumEl = document.getElementById("datum");
-if (datumEl) {
-  datumEl.innerText = heute.toLocaleDateString("de-DE", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric"
+function showAppScreen() {
+  const authScreen = document.getElementById("auth-screen");
+  const appScreen = document.getElementById("app-screen");
+
+  if (authScreen) authScreen.classList.add("hidden");
+  if (appScreen) appScreen.classList.remove("hidden");
+}
+
+async function initializeAppForUser(uid) {
+  PLAN_SETTINGS = await loadSettingsForUser(uid);
+  TODAY_DATE = new Date();
+  TODAY_DATE.setHours(0, 0, 0, 0);
+
+  setupWeeksOverlayInteractions();
+  setupSettingsUI();
+  renderAppWithCurrentState();
+  populateSettingsForm(PLAN_SETTINGS);
+}
+
+function setupAuthGate() {
+  const loginButton = document.getElementById("login-btn");
+  if (loginButton) {
+    loginButton.addEventListener("click", async () => {
+      setGlobalLoaderVisible(true);
+      try {
+        await signInWithGoogle();
+      } catch (error) {
+        console.error("Google login failed:", error);
+        setGlobalLoaderVisible(false);
+      }
+    });
+  }
+
+  onAuthChange(async (user) => {
+    if (!user) {
+      ACTIVE_USER_UID = null;
+      APP_INITIALIZED_UID = null;
+      PLAN_SETTINGS = null;
+      showAuthScreen();
+      setGlobalLoaderVisible(false);
+      return;
+    }
+
+    ACTIVE_USER_UID = user.uid;
+    showAppScreen();
+
+    if (APP_INITIALIZED_UID === user.uid) {
+      setGlobalLoaderVisible(false);
+      return;
+    }
+    APP_INITIALIZED_UID = user.uid;
+
+    setGlobalLoaderVisible(true);
+    try {
+      await initializeAppForUser(user.uid);
+    } finally {
+      setGlobalLoaderVisible(false);
+    }
   });
 }
 
-renderCountdownDateLabels(PLAN_SETTINGS);
-renderCountdown(PLAN_SETTINGS, heute);
-renderPhases(PLAN_SETTINGS, heute);
-renderTodayEntry(null);
-renderUpcomingPreview(new Map(), heute);
-updateWeeksOverlayData(new Map(), heuteISO, PLAN_SETTINGS.start);
-loadTrainingData(heuteISO, heute);
-
 document.addEventListener("DOMContentLoaded", () => {
-  setupDevPanel(PLAN_SETTINGS, SIM_SETTINGS);
-  setupWeeksOverlayInteractions();
-  renderWeekOverlayContent();
+  setupAuthGate();
+  updateBodyScrollLock();
 });
 
 if ("serviceWorker" in navigator) {
