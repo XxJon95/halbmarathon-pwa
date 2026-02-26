@@ -265,25 +265,35 @@ h1 span {
 }
 
 .upcoming-card {
-  min-width: 110px;
-  max-width: 110px;
+  min-width: 132px;
+  max-width: 132px;
   background: rgba(16, 32, 64, 0.6);
   border: 1px solid rgba(34, 197, 94, 0.4);
   border-radius: 14px;
   padding: 10px;
   flex-shrink: 0;
-  text-align: center;
+  text-align: left;
+  display: grid;
+  gap: 3px;
 }
 
 .upcoming-date {
-  font-size: 12px;
+  font-size: 11px;
   opacity: 0.7;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 
 .upcoming-training {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
+  line-height: 1.25;
+}
+
+.upcoming-meta {
+  font-size: 11px;
+  color: #cbd5e1;
+  line-height: 1.2;
+  opacity: 0.9;
 }
 
 /* =========================
@@ -339,7 +349,33 @@ h1 span {
   z-index: 9999;
   font-size: 12px;
   display: grid;
+  gap: 10px;
+}
+
+.dev-panel h3 {
+  margin: 0 0 2px 0;
+}
+
+.dev-section {
+  display: grid;
   gap: 6px;
+  background: rgba(30,41,59,0.45);
+  border: 1px solid rgba(148,163,184,0.2);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.dev-section h4 {
+  margin: 0 0 2px 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #cbd5e1;
+}
+
+.dev-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .dev-panel input {
@@ -351,12 +387,18 @@ h1 span {
 }
 
 .dev-panel button {
-  margin-top: 6px;
+  margin-top: 4px;
   padding: 6px;
   background: #22c55e;
   border: none;
   border-radius: 6px;
   font-weight: 600;
+}
+
+.dev-panel .ghost-btn {
+  background: rgba(148,163,184,0.16);
+  color: #e5e7eb;
+  border: 1px solid rgba(148,163,184,0.35);
 }
 
 .hidden {
