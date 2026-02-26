@@ -24,8 +24,8 @@
             </div>
 
             <div class="countdown-dates">
-                <span>Trainingsstart 01.01.2026</span>
-                <span>Wettkampftag 05.07.2026</span>
+                <span id="countdown-start-date">Trainingsstart 01.01.2026</span>
+                <span id="countdown-race-date">Wettkampftag 05.07.2026</span>
             </div>
         </div>
 
@@ -86,25 +86,41 @@
     <div id="dev-panel" class="dev-panel hidden">
         <h3>Dev Panel</h3>
 
-        <label>Simuliertes Datum</label>
-        <input type="date" id="dev-date">
+        <div class="dev-section">
+            <h4>Simulation</h4>
 
-        <label>Trainingsstart</label>
-        <input type="date" id="dev-start">
+            <label>Simuliertes Datum</label>
+            <input type="date" id="sim-date">
 
-        <label>Wettkampftag</label>
-        <input type="date" id="dev-race">
+            <div class="dev-actions">
+                <button id="sim-apply">Simulation anwenden</button>
+                <button id="sim-clear" class="ghost-btn">Simulation zuruecksetzen</button>
+            </div>
+        </div>
 
-        <label>Phase 1 Wochen</label>
-        <input type="number" id="dev-p1" min="1">
+        <div class="dev-section">
+            <h4>Echte Planwerte</h4>
 
-        <label>Phase 2 Wochen</label>
-        <input type="number" id="dev-p2" min="1">
+            <label>Trainingsstart</label>
+            <input type="date" id="plan-start">
 
-        <label>Recovery Wochen</label>
-        <input type="number" id="dev-p4" min="1">
+            <label>Wettkampftag</label>
+            <input type="date" id="plan-race">
 
-        <button id="dev-apply">Apply</button>
+            <label>Phase 1 Wochen</label>
+            <input type="number" id="plan-p1" min="1">
+
+            <label>Phase 2 Wochen</label>
+            <input type="number" id="plan-p2" min="1">
+
+            <label>Phase 3 Wochen</label>
+            <input type="number" id="plan-p3" min="1">
+
+            <label>Phase 4 Wochen</label>
+            <input type="number" id="plan-p4" min="1">
+
+            <button id="plan-save">Planwerte speichern</button>
+        </div>
     </div>
 </body>
 
