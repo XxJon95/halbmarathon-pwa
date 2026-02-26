@@ -79,6 +79,29 @@
 
         <div id="upcoming-container" class="upcoming-scroll"></div>
 
+        <button id="open-weeks-overlay" class="week-open-button" type="button">Wochenübersicht öffnen</button>
+
+    </div>
+
+    <div id="weeks-overlay" class="weeks-overlay hidden">
+        <div class="weeks-modal">
+            <button id="weeks-close" class="weeks-close-btn" type="button" aria-label="Schliessen">&times;</button>
+
+            <div class="week-toolbar">
+                <button id="week-prev" class="week-nav-button" type="button">Vorherige Woche</button>
+                <div class="week-select-wrap">
+                    <button id="week-select-trigger" class="week-select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+                        <span id="week-select-primary" class="week-select-primary">Woche -</span>
+                        <span id="week-select-secondary" class="week-select-secondary">-</span>
+                        <span class="week-select-caret">▾</span>
+                    </button>
+                    <div id="week-select-menu" class="week-select-menu hidden" role="listbox"></div>
+                </div>
+                <button id="week-next" class="week-nav-button" type="button">N&auml;chste Woche</button>
+            </div>
+
+            <div id="week-days" class="week-days"></div>
+        </div>
     </div>
 
     <script src="app.js"></script>
