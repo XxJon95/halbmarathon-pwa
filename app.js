@@ -129,6 +129,12 @@ function setText(id, value) {
   if (el) el.innerText = value;
 }
 
+function hasDisplayValue(value) {
+  if (value === null || value === undefined) return false;
+  const normalized = String(value).trim();
+  return normalized !== "" && normalized !== "-" && normalized !== "—";
+}
+
 function derivePhase3Weeks(startISO, raceISO, p1, p2) {
   const msPerWeek = 1000 * 60 * 60 * 24 * 7;
   const phase3Start = new Date(addWeeks(startISO, p1 + p2) + "T00:00:00");
@@ -167,19 +173,11 @@ function renderCountdownDateLabels(planSettings) {
 }
 
 function renderTodayEntry(entry) {
-  const todayEntry = entry || {
-    training: "Kein Eintrag",
-    distanz: "-",
-    pace: "-",
-    heartrate: "-",
-    notiz: "Heute kein Training geplant."
-  };
-
-  setText("training", todayEntry.training);
-  setText("distanz", todayEntry.distanz);
-  setText("pace", todayEntry.pace);
-  setText("heartrate", todayEntry.heartrate);
-  setText("notiz", todayEntry.notiz);
+  setText("training", hasDisplayValue(entry?.training) ? entry.training : "Kein Eintrag");
+  setText("distanz", hasDisplayValue(entry?.distanz) ? entry.distanz : "-");
+  setText("pace", hasDisplayValue(entry?.pace) ? entry.pace : "-");
+  setText("heartrate", hasDisplayValue(entry?.heartrate) ? entry.heartrate : "-");
+  setText("notiz", hasDisplayValue(entry?.notiz) ? entry.notiz : "Heute kein Training geplant.");
 }
 
 function renderUpcomingPreview(scheduleByDate, today) {
@@ -189,7 +187,7 @@ function renderUpcomingPreview(scheduleByDate, today) {
   upcomingContainer.innerHTML = "";
   const msPerDay = 1000 * 60 * 60 * 24;
 
-  for (let d = 1; d <= 5; d++) {
+  for (let d = 1; d <= 6; d++) {
     const nextDate = new Date(today.getTime() + d * msPerDay);
     const nextISO = toISODate(nextDate);
     const entry = scheduleByDate.get(nextISO);
@@ -205,29 +203,343 @@ function renderUpcomingPreview(scheduleByDate, today) {
       month: "2-digit"
     });
 
-    const trainingEl = document.createElement("div");
-    trainingEl.classList.add("upcoming-training");
-    trainingEl.innerText = entry?.training || "-";
-
-    const distanzEl = document.createElement("div");
-    distanzEl.classList.add("upcoming-meta");
-    distanzEl.innerText = entry?.distanz || "-";
-
-    const paceEl = document.createElement("div");
-    paceEl.classList.add("upcoming-meta");
-    paceEl.innerText = entry?.pace || "-";
-
-    const heartrateEl = document.createElement("div");
-    heartrateEl.classList.add("upcoming-meta");
-    heartrateEl.innerText = entry?.heartrate || "-";
-
     card.appendChild(dateEl);
-    card.appendChild(trainingEl);
-    card.appendChild(distanzEl);
-    card.appendChild(paceEl);
-    card.appendChild(heartrateEl);
+
+    if (hasDisplayValue(entry?.training)) {
+      const trainingEl = document.createElement("div");
+      trainingEl.classList.add("upcoming-training");
+      trainingEl.innerText = entry.training;
+      card.appendChild(trainingEl);
+    }
+
+    if (hasDisplayValue(entry?.distanz)) {
+      const distanzEl = document.createElement("div");
+      distanzEl.classList.add("upcoming-meta");
+      distanzEl.innerText = entry.distanz;
+      card.appendChild(distanzEl);
+    }
+
+    if (hasDisplayValue(entry?.pace)) {
+      const paceEl = document.createElement("div");
+      paceEl.classList.add("upcoming-meta");
+      paceEl.innerText = entry.pace;
+      card.appendChild(paceEl);
+    }
+
+    if (hasDisplayValue(entry?.heartrate)) {
+      const heartrateEl = document.createElement("div");
+      heartrateEl.classList.add("upcoming-meta");
+      heartrateEl.innerText = entry.heartrate;
+      card.appendChild(heartrateEl);
+    }
+
     upcomingContainer.appendChild(card);
   }
+}
+
+const WEEK_OVERLAY_STATE = {
+  scheduleByDate: new Map(),
+  weekStarts: [],
+  currentIndex: 0,
+  startISO: null,
+  todayISO: null,
+  handlersBound: false
+};
+
+function getWeekStartISO(isoDate) {
+  const date = new Date(isoDate + "T00:00:00");
+  const day = (date.getDay() + 6) % 7;
+  date.setDate(date.getDate() - day);
+  return toISODate(date);
+}
+
+function getWeekNumberFromStart(weekStartISO, startISO) {
+  function isoToUtcDayIndex(isoDate) {
+    const parts = isoDate.split("-").map(Number);
+    if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return 0;
+    const utcMs = Date.UTC(parts[0], parts[1] - 1, parts[2]);
+    return Math.floor(utcMs / 86400000);
+  }
+
+  const startWeekISO = getWeekStartISO(startISO);
+  const weekStartIndex = isoToUtcDayIndex(weekStartISO);
+  const startWeekIndex = isoToUtcDayIndex(startWeekISO);
+  const diffWeeks = Math.floor((weekStartIndex - startWeekIndex) / 7);
+
+  return Math.max(1, diffWeeks + 1);
+}
+
+function formatWeekRange(weekStartISO) {
+  const endISO = addDays(weekStartISO, 6);
+  return `${formatISODateForDisplay(weekStartISO)} - ${formatISODateForDisplay(endISO)}`;
+}
+
+function createWeekStarts(scheduleByDate, todayISO) {
+  const allDates = Array.from(scheduleByDate.keys()).sort();
+  if (allDates.length === 0) return [getWeekStartISO(todayISO)];
+
+  const weekSet = new Set(allDates.map(getWeekStartISO));
+  return Array.from(weekSet).sort();
+}
+
+function getInitialWeekIndex(weekStarts, todayISO) {
+  const todayWeek = getWeekStartISO(todayISO);
+  const exactIndex = weekStarts.indexOf(todayWeek);
+  if (exactIndex >= 0) return exactIndex;
+
+  for (let i = 0; i < weekStarts.length; i++) {
+    if (weekStarts[i] > todayWeek) return i;
+  }
+
+  return weekStarts.length - 1;
+}
+
+function updateWeekSelectOptions() {
+  const menu = document.getElementById("week-select-menu");
+  if (!menu) return;
+
+  menu.innerHTML = "";
+
+  WEEK_OVERLAY_STATE.weekStarts.forEach((weekStart, idx) => {
+    const weekNumber = getWeekNumberFromStart(weekStart, WEEK_OVERLAY_STATE.startISO);
+    const rangeText = formatWeekRange(weekStart);
+
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "week-select-item";
+    if (idx === WEEK_OVERLAY_STATE.currentIndex) item.classList.add("is-active");
+    item.dataset.weekIndex = String(idx);
+    item.setAttribute("role", "option");
+    item.setAttribute("aria-selected", idx === WEEK_OVERLAY_STATE.currentIndex ? "true" : "false");
+
+    const primary = document.createElement("span");
+    primary.className = "week-select-item-primary";
+    primary.innerText = `Woche ${weekNumber}`;
+
+    const secondary = document.createElement("span");
+    secondary.className = "week-select-item-secondary";
+    secondary.innerText = rangeText;
+
+    item.appendChild(primary);
+    item.appendChild(secondary);
+    menu.appendChild(item);
+  });
+}
+
+function renderWeekSelectTrigger() {
+  const primaryEl = document.getElementById("week-select-primary");
+  const secondaryEl = document.getElementById("week-select-secondary");
+
+  if (!primaryEl || !secondaryEl || WEEK_OVERLAY_STATE.weekStarts.length === 0) return;
+
+  const weekStart = WEEK_OVERLAY_STATE.weekStarts[WEEK_OVERLAY_STATE.currentIndex];
+  const weekNumber = getWeekNumberFromStart(weekStart, WEEK_OVERLAY_STATE.startISO);
+  primaryEl.innerText = `Woche ${weekNumber}`;
+  secondaryEl.innerText = formatWeekRange(weekStart);
+}
+
+function setWeekMenuVisible(isVisible) {
+  const menu = document.getElementById("week-select-menu");
+  const trigger = document.getElementById("week-select-trigger");
+  if (!menu || !trigger) return;
+
+  menu.classList.toggle("hidden", !isVisible);
+  trigger.setAttribute("aria-expanded", isVisible ? "true" : "false");
+}
+
+function renderWeekOverlayContent() {
+  const weekDaysEl = document.getElementById("week-days");
+  const prevButton = document.getElementById("week-prev");
+  const nextButton = document.getElementById("week-next");
+
+  if (!weekDaysEl || !prevButton || !nextButton) return;
+  if (WEEK_OVERLAY_STATE.weekStarts.length === 0) return;
+
+  const weekStartISO = WEEK_OVERLAY_STATE.weekStarts[WEEK_OVERLAY_STATE.currentIndex];
+  prevButton.disabled = WEEK_OVERLAY_STATE.currentIndex <= 0;
+  nextButton.disabled = WEEK_OVERLAY_STATE.currentIndex >= WEEK_OVERLAY_STATE.weekStarts.length - 1;
+  renderWeekSelectTrigger();
+
+  weekDaysEl.innerHTML = "";
+
+  for (let i = 0; i < 7; i++) {
+    const dayISO = addDays(weekStartISO, i);
+    const entry = WEEK_OVERLAY_STATE.scheduleByDate.get(dayISO);
+
+    const row = document.createElement("div");
+    row.classList.add("week-day-row");
+
+    const head = document.createElement("div");
+    head.classList.add("week-day-head");
+    head.innerText = new Date(dayISO + "T00:00:00").toLocaleDateString("de-DE", {
+      weekday: "short",
+      day: "2-digit",
+      month: "2-digit"
+    });
+    row.appendChild(head);
+
+    const body = document.createElement("div");
+    body.classList.add("week-day-body");
+
+    const left = document.createElement("div");
+    left.classList.add("week-day-left");
+
+    const values = document.createElement("div");
+    values.classList.add("week-day-values");
+
+    if (hasDisplayValue(entry?.training)) {
+      const training = document.createElement("div");
+      training.classList.add("week-day-training");
+      training.innerText = entry.training;
+      left.appendChild(training);
+    }
+
+    if (hasDisplayValue(entry?.distanz)) {
+      const distanz = document.createElement("div");
+      distanz.classList.add("week-day-value");
+      distanz.innerText = entry.distanz;
+      values.appendChild(distanz);
+    }
+
+    if (hasDisplayValue(entry?.pace)) {
+      const pace = document.createElement("div");
+      pace.classList.add("week-day-value");
+      pace.innerText = entry.pace;
+      values.appendChild(pace);
+    }
+
+    if (hasDisplayValue(entry?.heartrate)) {
+      const heartrate = document.createElement("div");
+      heartrate.classList.add("week-day-value");
+      heartrate.innerText = entry.heartrate;
+      values.appendChild(heartrate);
+    }
+
+    if (hasDisplayValue(entry?.notiz)) {
+      const note = document.createElement("div");
+      note.classList.add("week-day-note");
+      note.innerText = entry.notiz;
+      left.appendChild(note);
+    }
+
+    if (left.childElementCount === 0 && values.childElementCount === 0) {
+      const empty = document.createElement("div");
+      empty.classList.add("week-empty", "compact");
+      empty.innerText = "Kein Eintrag";
+      left.appendChild(empty);
+    }
+
+    body.appendChild(left);
+    if (values.childElementCount > 0) body.appendChild(values);
+
+    row.appendChild(body);
+    weekDaysEl.appendChild(row);
+  }
+}
+
+function setWeeksOverlayVisible(isVisible) {
+  const overlay = document.getElementById("weeks-overlay");
+  if (!overlay) return;
+
+  overlay.classList.toggle("hidden", !isVisible);
+  document.body.classList.toggle("no-scroll", isVisible);
+  if (!isVisible) setWeekMenuVisible(false);
+}
+
+function setupWeeksOverlayInteractions() {
+  if (WEEK_OVERLAY_STATE.handlersBound) return;
+
+  const openButton = document.getElementById("open-weeks-overlay");
+  const closeButton = document.getElementById("weeks-close");
+  const prevButton = document.getElementById("week-prev");
+  const nextButton = document.getElementById("week-next");
+  const weekSelectTrigger = document.getElementById("week-select-trigger");
+  const weekSelectMenu = document.getElementById("week-select-menu");
+  const weekSelectWrap = document.querySelector(".week-select-wrap");
+  const overlay = document.getElementById("weeks-overlay");
+
+  if (!openButton || !closeButton || !prevButton || !nextButton || !weekSelectTrigger || !weekSelectMenu || !weekSelectWrap || !overlay) return;
+
+  openButton.addEventListener("click", () => {
+    setWeeksOverlayVisible(true);
+    updateWeekSelectOptions();
+    renderWeekOverlayContent();
+  });
+
+  closeButton.addEventListener("click", () => {
+    setWeeksOverlayVisible(false);
+  });
+
+  prevButton.addEventListener("click", () => {
+    if (WEEK_OVERLAY_STATE.currentIndex > 0) {
+      WEEK_OVERLAY_STATE.currentIndex -= 1;
+      renderWeekOverlayContent();
+      updateWeekSelectOptions();
+    }
+  });
+
+  nextButton.addEventListener("click", () => {
+    if (WEEK_OVERLAY_STATE.currentIndex < WEEK_OVERLAY_STATE.weekStarts.length - 1) {
+      WEEK_OVERLAY_STATE.currentIndex += 1;
+      renderWeekOverlayContent();
+      updateWeekSelectOptions();
+    }
+  });
+
+  weekSelectTrigger.addEventListener("click", () => {
+    const isOpen = !weekSelectMenu.classList.contains("hidden");
+    setWeekMenuVisible(!isOpen);
+  });
+
+  weekSelectMenu.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-week-index]");
+    if (!button) return;
+
+    const selectedIndex = parseInt(button.dataset.weekIndex, 10);
+    if (Number.isInteger(selectedIndex) && selectedIndex >= 0 && selectedIndex < WEEK_OVERLAY_STATE.weekStarts.length) {
+      WEEK_OVERLAY_STATE.currentIndex = selectedIndex;
+      renderWeekOverlayContent();
+      updateWeekSelectOptions();
+      setWeekMenuVisible(false);
+    }
+  });
+
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) {
+      setWeeksOverlayVisible(false);
+      setWeekMenuVisible(false);
+      return;
+    }
+
+    if (!weekSelectWrap.contains(event.target)) {
+      setWeekMenuVisible(false);
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      setWeekMenuVisible(false);
+      setWeeksOverlayVisible(false);
+    }
+  });
+
+  WEEK_OVERLAY_STATE.handlersBound = true;
+}
+
+function updateWeeksOverlayData(scheduleByDate, todayISO, startISO) {
+  const previousWeekStart = WEEK_OVERLAY_STATE.weekStarts[WEEK_OVERLAY_STATE.currentIndex];
+
+  WEEK_OVERLAY_STATE.scheduleByDate = scheduleByDate;
+  WEEK_OVERLAY_STATE.todayISO = todayISO;
+  WEEK_OVERLAY_STATE.startISO = startISO;
+  WEEK_OVERLAY_STATE.weekStarts = createWeekStarts(scheduleByDate, todayISO);
+
+  const preservedIndex = WEEK_OVERLAY_STATE.weekStarts.indexOf(previousWeekStart);
+  WEEK_OVERLAY_STATE.currentIndex =
+    preservedIndex >= 0 ? preservedIndex : getInitialWeekIndex(WEEK_OVERLAY_STATE.weekStarts, todayISO);
+
+  updateWeekSelectOptions();
+  renderWeekOverlayContent();
 }
 
 function renderCountdown(planSettings, today) {
@@ -276,9 +588,10 @@ function renderCountdown(planSettings, today) {
       </div>
     `;
   } else {
+    const tageLabel = diffDays === 1 ? "Tag" : "Tage";
     countdownText.innerHTML = `
       <div class="countdown-line-main">
-        Noch <span class="big-number">${diffDays}</span> Tage
+        Noch <span class="big-number">${diffDays}</span> ${tageLabel}
       </div>
       <div class="countdown-line-sub">
         bis zum Halbmarathon
@@ -457,20 +770,22 @@ function loadTrainingData(todayISO, today) {
         if (!sheetDateISO) continue;
 
         scheduleByDate.set(sheetDateISO, {
-          training: readField(values, index.training, "Kein Eintrag"),
-          distanz: readField(values, index.distanz, "-"),
-          pace: readField(values, index.pace, "-"),
-          heartrate: readField(values, index.heartrate, "-"),
-          notiz: readField(values, index.notiz, "Heute kein Training geplant.")
+          training: readField(values, index.training, ""),
+          distanz: readField(values, index.distanz, ""),
+          pace: readField(values, index.pace, ""),
+          heartrate: readField(values, index.heartrate, ""),
+          notiz: readField(values, index.notiz, "")
         });
       }
 
       renderTodayEntry(scheduleByDate.get(todayISO) || null);
       renderUpcomingPreview(scheduleByDate, today);
+      updateWeeksOverlayData(scheduleByDate, todayISO, PLAN_SETTINGS.start);
     })
     .catch(() => {
       renderTodayEntry(null);
       renderUpcomingPreview(new Map(), today);
+      updateWeeksOverlayData(new Map(), todayISO, PLAN_SETTINGS.start);
     });
 }
 
@@ -498,10 +813,13 @@ renderCountdown(PLAN_SETTINGS, heute);
 renderPhases(PLAN_SETTINGS, heute);
 renderTodayEntry(null);
 renderUpcomingPreview(new Map(), heute);
+updateWeeksOverlayData(new Map(), heuteISO, PLAN_SETTINGS.start);
 loadTrainingData(heuteISO, heute);
 
 document.addEventListener("DOMContentLoaded", () => {
   setupDevPanel(PLAN_SETTINGS, SIM_SETTINGS);
+  setupWeeksOverlayInteractions();
+  renderWeekOverlayContent();
 });
 
 if ("serviceWorker" in navigator) {
